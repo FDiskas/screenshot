@@ -14,15 +14,12 @@ async function captureWithPolling(url, imgElement) {
   const apiEndpoint = \`\${origin}/api/screenshot?url=\${encodeURIComponent(url)}\`;
   
   // Initial request to trigger capture
-  imgElement.src = apiEndpoint + '&t=' + Date.now();
+  imgElement.src = apiEndpoint;
   
   // Polling function
   const poll = async () => {
     try {
-      const response = await fetch(apiEndpoint + '&t=' + Date.now(), { 
-        method: 'HEAD',
-        cache: 'no-store'
-      });
+      const response = await fetch(apiEndpoint, { method: 'HEAD' });
       
       // Check for the 'Refresh' header (usually set to '5' for 5 seconds)
       const refreshHeader = response.headers.get('Refresh');
@@ -32,7 +29,7 @@ async function captureWithPolling(url, imgElement) {
         setTimeout(poll, parseInt(refreshHeader) * 1000);
       } else {
         console.log("Screenshot ready!");
-        imgElement.src = apiEndpoint + '&t=' + Date.now();
+        imgElement.src = apiEndpoint;
       }
     } catch (err) {
       console.error("Polling failed:", err);
@@ -71,15 +68,25 @@ async function captureWithPolling(url, imgElement) {
             <div>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <Terminal className="h-6 w-6 text-primary" />
-                API Endpoint
+                API Endpoints
               </h2>
               <div className="bg-muted/50 rounded-2xl p-6 border border-border/50 font-mono text-sm overflow-x-auto">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="bg-primary/20 text-primary px-2 py-0.5 rounded font-bold text-xs uppercase">GET</span>
                   <span className="text-foreground/80">{origin}/api/screenshot</span>
                 </div>
+                <p className="text-xs text-muted-foreground mb-4 ml-14">
+                  Returns PNG image bytes directly when cached.
+                </p>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="bg-primary/20 text-primary px-2 py-0.5 rounded font-bold text-xs uppercase">GET</span>
+                  <span className="text-foreground/80">{origin}/api/raw</span>
+                </div>
+                <p className="text-xs text-muted-foreground ml-14">
+                  Returns HTTP 302 redirect to the cached static image path.
+                </p>
+                </div>
               </div>
-            </div>
 
             <div>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -126,7 +133,14 @@ async function captureWithPolling(url, imgElement) {
                   <div className="bg-green-500/10 text-green-600 h-10 w-10 shrink-0 flex items-center justify-center rounded-xl font-bold">200</div>
                   <div>
                     <h4 className="font-semibold mb-1">Success</h4>
-                    <p className="text-sm text-muted-foreground">Returns the PNG image binary directly from cache.</p>
+                    <p className="text-sm text-muted-foreground">Returns the PNG image binary directly from cache on <code className="bg-muted px-1.5 py-0.5 rounded">/api/screenshot</code>.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4 p-5 rounded-2xl bg-card border shadow-sm">
+                  <div className="bg-amber-500/10 text-amber-600 h-10 w-10 shrink-0 flex items-center justify-center rounded-xl font-bold">302</div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Redirect</h4>
+                    <p className="text-sm text-muted-foreground">On <code className="bg-muted px-1.5 py-0.5 rounded">/api/raw</code>, cached images are returned as a redirect to a static PNG URL.</p>
                   </div>
                 </div>
                 <div className="flex gap-4 p-5 rounded-2xl bg-card border shadow-sm">

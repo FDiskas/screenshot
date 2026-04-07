@@ -48,7 +48,7 @@ const parseCreatedAt = (filename: string): Date | undefined => {
   }
 
   const token = match[1];
-  const iso = `${token.slice(0, 4)}-${token.slice(4, 6)}-${token.slice(6, 8)}T${token.slice(9, 11)}:${token.slice(11, 13)}:${token.slice(13, 15)}Z`;
+  const iso = `${token?.slice(0, 4)}-${token?.slice(4, 6)}-${token?.slice(6, 8)}T${token?.slice(9, 11)}:${token?.slice(11, 13)}:${token?.slice(13, 15)}Z`;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
     return undefined;

@@ -49,6 +49,34 @@ export interface ScreenshotResult {
   finalUrl?: string;
 }
 
+const escapeXml = (value: string): string => {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+};
+
+const buildOverlaySvg = (
+  width: number,
+  height: number,
+  host: string,
+): string => {
+  const safeHost = escapeXml(host);
+  const copyrightX = Math.max(8, width - 56);
+  const copyrightY = Math.max(16, height - 12);
+
+  return `
+    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="${width}" height="34" fill="rgba(0,0,0,0.45)" />
+      <text x="12" y="22" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="600">${safeHost}</text>
+      <text x="${copyrightX + 1}" y="${copyrightY + 1}" fill="rgba(0,0,0,0.45)" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="start">&#169;oders</text>
+      <text x="${copyrightX}" y="${copyrightY}" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="start">&#169;oders</text>
+    </svg>
+  `;
+};
+
 export const captureScreenshot = async (
   options: ScreenshotOptions,
 ): Promise<ScreenshotResult> => {
@@ -145,7 +173,25 @@ export const captureScreenshot = async (
       })
       .toBuffer();
 
-    return { buffer: resizedBuffer, status, finalUrl };
+    const overlayHost = (() => {
+      try {
+        return new URL(finalUrl).hostname;
+      } catch {
+        try {
+          return new URL(url).hostname;
+        } catch {
+          return "unknown-host";
+        }
+      }
+    })();
+
+    const overlaySvg = buildOverlaySvg(width, height, overlayHost);
+    const finalBuffer = await sharp(resizedBuffer)
+      .composite([{ input: Buffer.from(overlaySvg), top: 0, left: 0 }])
+      .png()
+      .toBuffer();
+
+    return { buffer: finalBuffer, status, finalUrl };
   } catch (error: any) {
     console.error(`Puppeteer error for ${url}:`, error.message);
 

@@ -3,8 +3,8 @@ import { CONFIG } from "../config";
 
 export const generatePlaceholder = async (
   text: string,
-  width = CONFIG.placeholder.defaultWidth,
-  height = CONFIG.placeholder.defaultHeight,
+  width: number = CONFIG.placeholder.defaultWidth,
+  height: number = CONFIG.placeholder.defaultHeight,
 ): Promise<Buffer> => {
   const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="#f3f4f6" />
@@ -18,8 +18,8 @@ export const generatePlaceholder = async (
 
 export const getStatusPlaceholder = async (
   status: number,
-  width = CONFIG.placeholder.defaultWidth,
-  height = CONFIG.placeholder.defaultHeight,
+  width: number = CONFIG.placeholder.defaultWidth,
+  height: number = CONFIG.placeholder.defaultHeight,
 ): Promise<Buffer> => {
   let text = `Status: ${status}`;
   if (status === 202) text = CONFIG.placeholder.textByStatus.processing;

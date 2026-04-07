@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { reactRenderer } from "@hono/react-renderer";
+import { readFile } from "node:fs/promises";
 import { Layout } from "./components/layout";
 import { LandingPage } from "./components/LandingPage";
 import { DocsPage } from "./components/DocsPage";
@@ -13,9 +14,20 @@ import { CONFIG } from "./config";
 
 const app = new Hono();
 const recentTriggerByDomain = new Map<string, number>();
+const screenshotMaxAgeSeconds = Math.max(
+  0,
+  Math.floor(CONFIG.cache.maxAgeMs / 1000),
+);
+const screenshotCacheControl = `public, max-age=${screenshotMaxAgeSeconds}, immutable`;
 
 // Static files
 app.use("/index.css", serveStatic({ path: "./src/index.css" }));
+app.use("/screenshots/*", async (c, next) => {
+  await next();
+  if (c.res.ok) {
+    c.res.headers.set("Cache-Control", screenshotCacheControl);
+  }
+});
 app.use("/screenshots/*", serveStatic({ root: "./public" }));
 
 // SSR Renderer
@@ -46,7 +58,10 @@ app.get("/docs", (c) => {
   return c.render(<DocsPage origin={origin} />, { title: CONFIG.server.docsTitle });
 });
 
-app.get("/api/screenshot", async (c) => {
+const handleScreenshotRequest = async (
+  c: any,
+  cacheMode: "image" | "redirect",
+) => {
   const url = c.req.query("url");
   const width = parseInt(c.req.query("width") || String(CONFIG.screenshot.defaultWidth));
   const height = parseInt(c.req.query("height") || String(CONFIG.screenshot.defaultHeight));
@@ -58,7 +73,10 @@ app.get("/api/screenshot", async (c) => {
   // 1. Basic validation
   if (!url.startsWith("https://")) {
     const errorBuffer = await getStatusPlaceholder(400, width, height);
-    return c.body(new Uint8Array(errorBuffer), 200, { "Content-Type": "image/png" });
+    return c.body(new Uint8Array(errorBuffer), 200, {
+      "Content-Type": "image/png",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    });
   }
 
   let domain: string;
@@ -68,17 +86,30 @@ app.get("/api/screenshot", async (c) => {
     domainUrl = cacheService.getDomainUrl(url);
   } catch {
     const errorBuffer = await getStatusPlaceholder(400, width, height);
-    return c.body(new Uint8Array(errorBuffer), 200, { "Content-Type": "image/png" });
+    return c.body(new Uint8Array(errorBuffer), 200, {
+      "Content-Type": "image/png",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    });
   }
 
   // 2. Check Cache
   const existing = dbService.getByUrl(url);
   if (existing) {
     if (existing.status === 200 && existing.image_path) {
-      // Return cached image
-      const file = Bun.file(`./public${existing.image_path}`);
-      if (await file.exists()) {
-        return new Response(file);
+      if (cacheMode === "redirect") {
+        const response = c.redirect(existing.image_path, 302);
+        response.headers.set("Cache-Control", screenshotCacheControl);
+        return response;
+      }
+
+      try {
+        const fileBuffer = await readFile(`./public${existing.image_path}`);
+        return c.body(new Uint8Array(fileBuffer), 200, {
+          "Content-Type": "image/png",
+          "Cache-Control": screenshotCacheControl,
+        });
+      } catch {
+        // File does not exist or cannot be read; continue to recapture path.
       }
     }
   }
@@ -87,7 +118,10 @@ app.get("/api/screenshot", async (c) => {
   const isSafe = await checkSafety(domainUrl);
   if (!isSafe) {
     const unsafePlaceholder = await getStatusPlaceholder(403, width, height);
-    return c.body(new Uint8Array(unsafePlaceholder), 200, { "Content-Type": "image/png" });
+    return c.body(new Uint8Array(unsafePlaceholder), 200, {
+      "Content-Type": "image/png",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    });
   }
 
   // 4. Async process and return placeholder
@@ -107,8 +141,17 @@ app.get("/api/screenshot", async (c) => {
   const processingPlaceholder = await getStatusPlaceholder(202, width, height);
   return c.body(new Uint8Array(processingPlaceholder), 200, { 
     "Content-Type": "image/png",
-    "Refresh": String(CONFIG.server.processingRefreshSeconds)
+    "Refresh": String(CONFIG.server.processingRefreshSeconds),
+    "Cache-Control": "no-store, no-cache, must-revalidate",
   });
+};
+
+app.get("/api/screenshot", async (c) => {
+  return handleScreenshotRequest(c, "image");
+});
+
+app.get("/api/raw", async (c) => {
+  return handleScreenshotRequest(c, "redirect");
 });
 
 console.log(`Server starting on port ${CONFIG.server.port}...`);

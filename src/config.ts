@@ -20,7 +20,7 @@ export const CONFIG = {
       fit: "contain",
       background: "#ffffff",
       position: "center",
-      withoutEnlargement: true,
+      withoutEnlargement: false,
     },
     blurLargeMedia: {
       enabled: true,

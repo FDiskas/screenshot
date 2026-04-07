@@ -92,7 +92,7 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[]; origin: string }> = (
 
           <div className="bg-muted/30 rounded-2xl p-6 border border-dashed text-center">
             <p className="text-sm text-muted-foreground mb-4">API Preview</p>
-            <code className="block bg-background/50 p-4 rounded-lg text-xs md:text-sm text-primary overflow-x-auto whitespace-nowrap">
+            <code id="api-preview-sample" className="block bg-background/50 p-4 rounded-lg text-xs md:text-sm text-primary overflow-x-auto whitespace-nowrap">
               GET {origin}/api/screenshot?url=https://yoursite.com
             </code>
           </div>
@@ -113,18 +113,34 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[]; origin: string }> = (
           const input = document.getElementById('demo-url');
           const resultArea = document.getElementById('demo-result');
           const resultImg = document.getElementById('result-img');
+          const apiPreview = document.getElementById('api-preview-sample');
+          const previewOrigin = ${JSON.stringify(origin)};
           let pollInterval;
+
+          const updateApiPreview = (rawUrl) => {
+            if (!apiPreview) return;
+            const normalizedUrl = (rawUrl || '').trim() || 'https://yoursite.com';
+            const encodedUrl = encodeURIComponent(normalizedUrl);
+            apiPreview.textContent = 'GET ' + previewOrigin + '/api/screenshot?url=' + encodedUrl;
+          };
+
+          updateApiPreview(input?.value || '');
+          input?.addEventListener('input', () => {
+            updateApiPreview(input.value);
+          });
 
           form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const url = input.value;
             if (!url) return;
 
+            updateApiPreview(url);
+
             const apiBase = '/api/screenshot?url=' + encodeURIComponent(url);
             
             // Show result area and load initial placeholder
             resultArea.classList.remove('hidden');
-            resultImg.src = apiBase + '&t=' + Date.now();
+            resultImg.src = apiBase;
             resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             if (pollInterval) clearInterval(pollInterval);
@@ -132,11 +148,7 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[]; origin: string }> = (
             // Poll for completion
             pollInterval = setInterval(async () => {
               try {
-                // Use fetch with cache buster to check the status accurately
-                const response = await fetch(apiBase + '&t=' + Date.now(), { 
-                  method: 'HEAD',
-                  cache: 'no-store'
-                });
+                const response = await fetch(apiBase, { method: 'HEAD' });
                 
                 // If it's no longer 202 (Accepted/Processing), it's either 200 (Done) or an error (Cached)
                 // In both cases, the 'Refresh' header will be missing.
@@ -145,7 +157,7 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[]; origin: string }> = (
                 if (!refreshHeader) {
                   console.log("Screenshot ready! Stopping poll.");
                   clearInterval(pollInterval);
-                  resultImg.src = apiBase + '&t=' + Date.now();
+                  resultImg.src = apiBase;
                 }
               } catch (err) {
                 console.error("Polling error:", err);

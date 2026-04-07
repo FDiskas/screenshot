@@ -88,10 +88,10 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
       <body className="bg-background min-h-screen text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
+            <a href="/" className="flex items-center gap-2" aria-label="Go to home page">
               <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg text-primary-foreground font-bold shadow-lg shadow-primary/20">S</div>
               <span className="text-xl font-bold tracking-tight">SnapService</span>
-            </div>
+            </a>
             <nav className="flex items-center gap-6">
               <a href="/" className="text-sm font-medium hover:text-primary transition-colors">Home</a>
               <a href="#demo" className="text-sm font-medium hover:text-primary transition-colors">Demo</a>
