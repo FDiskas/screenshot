@@ -2,6 +2,7 @@ import { hatchet } from "../hatchet";
 import { dbService } from "../../db";
 import { captureScreenshot } from "../screenshot";
 import { cacheService } from "../cache";
+import { RateLimitDuration } from "@hatchet-dev/typescript-sdk";
 
 interface ScreenshotInput {
   url: string;
@@ -19,6 +20,14 @@ export const ScreenshotWorkflow = hatchet.workflow<ScreenshotInput>({
 
 ScreenshotWorkflow.task({
   name: "process-screenshot",
+  rateLimits: [
+    {
+      key: "screenshot-limit",
+      units: 1,
+      limit: 2,
+      duration: RateLimitDuration.MINUTE,
+    }
+  ],
   fn: async (input, ctx) => {
     const { url, width, height } = input;
     console.log(`[Workflow] Processing screenshot for: ${url} (${width}x${height})`);
@@ -30,10 +39,10 @@ ScreenshotWorkflow.task({
 
     try {
       const result = await captureScreenshot({ url, width, height });
-      
+
       if (result.status === 200 && result.buffer) {
         const imagePath = cacheService.save(url, result.buffer, 200);
-        
+
         dbService.add({
           url,
           domain,
