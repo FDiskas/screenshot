@@ -10,60 +10,6 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
         <title>{title}</title>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="stylesheet" href="/index.css" />
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script>{`
-          tailwind.config = {
-            darkMode: 'class',
-            theme: {
-              container: {
-                center: true,
-                padding: "2rem",
-              },
-              extend: {
-                colors: {
-                  border: "hsl(var(--border))",
-                  input: "hsl(var(--input))",
-                  ring: "hsl(var(--ring))",
-                  background: "hsl(var(--background))",
-                  foreground: "hsl(var(--foreground))",
-                  primary: {
-                    DEFAULT: "hsl(var(--primary))",
-                    foreground: "hsl(var(--primary-foreground))",
-                  },
-                  secondary: {
-                    DEFAULT: "hsl(var(--secondary))",
-                    foreground: "hsl(var(--secondary-foreground))",
-                  },
-                  destructive: {
-                    DEFAULT: "hsl(var(--destructive))",
-                    foreground: "hsl(var(--destructive-foreground))",
-                  },
-                  muted: {
-                    DEFAULT: "hsl(var(--muted))",
-                    foreground: "hsl(var(--muted-foreground))",
-                  },
-                  accent: {
-                    DEFAULT: "hsl(var(--accent))",
-                    foreground: "hsl(var(--accent-foreground))",
-                  },
-                  popover: {
-                    DEFAULT: "hsl(var(--popover))",
-                    foreground: "hsl(var(--popover-foreground))",
-                  },
-                  card: {
-                    DEFAULT: "hsl(var(--card))",
-                    foreground: "hsl(var(--card-foreground))",
-                  },
-                },
-                borderRadius: {
-                  lg: "var(--radius)",
-                  md: "calc(var(--radius) - 2px)",
-                  sm: "calc(var(--radius) - 4px)",
-                },
-              }
-            }
-          }
-        `}</script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -87,17 +33,17 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
         `}</style>
       </head>
       <body className="bg-background min-h-screen text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
             <a href="/" className="flex items-center gap-2" aria-label="Go to home page">
-              <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg text-primary-foreground font-bold shadow-lg shadow-primary/20">S</div>
+              <img src="/favicon.svg" alt="SnapService logo" className="h-8 w-8 rounded-lg shadow-lg shadow-primary/20" />
               <span className="text-xl font-bold tracking-tight">SnapService</span>
             </a>
             <nav className="flex items-center gap-6">
               <a href="/" className="text-sm font-medium hover:text-primary transition-colors">Home</a>
               <a href="#demo" className="text-sm font-medium hover:text-primary transition-colors">Demo</a>
               <a href="#gallery" className="text-sm font-medium hover:text-primary transition-colors">Gallery</a>
-              <div className="h-8 w-[1px] bg-border mx-2" />
+              <div className="h-8 w-px bg-border mx-2" />
               <button 
                 id="theme-toggle"
                 className="p-2 rounded-md hover:bg-accent transition-colors"

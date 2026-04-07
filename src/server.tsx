@@ -21,7 +21,7 @@ const screenshotMaxAgeSeconds = Math.max(
 const screenshotCacheControl = `public, max-age=${screenshotMaxAgeSeconds}, immutable`;
 
 // Static files
-app.use("/index.css", serveStatic({ path: "./src/index.css" }));
+app.use("/index.css", serveStatic({ path: "./public/index.css" }));
 app.use("/favicon.svg", serveStatic({ path: "./public/favicon.svg" }));
 app.use("/screenshots/*", async (c, next) => {
   await next();
