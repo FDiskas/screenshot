@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { checkSafety } from "../src/lib/safety";
 import { cacheService } from "../src/lib/cache";
 
 // Mock fetch for safety check
-global.fetch = vi.fn();
+global.fetch = vi.fn() as unknown as typeof fetch;
 
 describe("Safety Check", () => {
   it("should return true if status is false (safe)", async () => {

@@ -28,7 +28,7 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[]; origin: string }> = (
           </h1>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl text-pretty leading-relaxed">
             The fastest screenshot service built for developers. Automatic domain-level caching,
-            safety checks, and high-fidelity captures.
+            private DNS filtering for ads/malware, cookie popup cleanup, and high-fidelity captures.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 items-center mb-16">
             <a href="#demo" className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-4 rounded-xl text-lg font-semibold shadow-xl shadow-primary/25 transition-all hover:scale-105 inline-flex items-center gap-2 group">
@@ -42,9 +42,9 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[]; origin: string }> = (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl w-full">
             {[
               { icon: Zap, label: "Lightning Fast", sub: "Domain-level caching" },
-              { icon: ShieldCheck, label: "Safe to Use", sub: "Built-in safety API" },
+              { icon: ShieldCheck, label: "Safer Captures", sub: "Private DNS + safety API" },
               { icon: Camera, label: "High Fidelity", sub: "Headless Chrome engine" },
-              { icon: Search, label: "Smart Redirects", sub: "Complete browser flow" }
+              { icon: Search, label: "Clean Output", sub: "Cookie popups suppressed" }
             ].map((feature, i) => (
               <div key={i} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border shadow-sm">
                 <div className="bg-primary/10 p-3 rounded-xl mb-2">

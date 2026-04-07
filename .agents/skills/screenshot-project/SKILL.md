@@ -10,7 +10,8 @@ Use this skill when working on this repository's screenshot capture, caching, AP
 ## Stack And Structure
 
 - Runtime/server: Bun + Hono
-- Capture: Puppeteer in `src/lib/screenshot.ts`
+- Capture orchestration: Puppeteer in `src/lib/screenshot.ts`
+- DNS behavior and browser DNS launch config: `src/lib/dns.ts`
 - Image processing: Sharp in `src/lib/screenshot.ts`
 - Cache/index model: file system only (no DB metadata for dimensions)
 - Main routes: `src/server.tsx`
@@ -50,6 +51,15 @@ Use this skill when working on this repository's screenshot capture, caching, AP
 - Top semi-transparent bar contains captured host name.
 - Bottom-right `©oders` text has subtle shadow for readability.
 
+8. DNS behavior is enforced via Chromium Local State
+- DNS preflight uses JSON DNS endpoint from config to check A/AAAA availability.
+- Chromium launch should use per-run `userDataDir` with `Local State` keys:
+	- `dns_over_https.mode = secure`
+	- `dns_over_https.templates = <RFC6570 template>`
+	- `async_dns.enabled = true`
+- Do not rely only on Chromium CLI DoH switches in this project; current reliable path is Local State prefs.
+- DNS profile verification currently uses `https://test.nextdns.io`, including nested `*.test.nextdns.io` payload flow.
+
 ## Performance Expectations
 
 - Cache hits should be cheap.
@@ -64,6 +74,7 @@ Use this skill when working on this repository's screenshot capture, caching, AP
 - Do not tie behavior to filename dimension parsing unless explicitly requested.
 - Do not cache processing placeholders as if they were final images.
 - Do not add heavy runtime work on cache hit unless required.
+- Do not move DNS logic back into `src/lib/screenshot.ts`; keep DNS concerns in `src/lib/dns.ts`.
 
 ## Editing Checklist
 
@@ -86,6 +97,11 @@ When changing API/cache behavior, verify:
 4. `src/lib/screenshot.ts`
 - Resize happens before save.
 - Overlay composition still applied.
+
+5. `src/lib/dns.ts`
+- Preflight still checks both A then AAAA.
+- Local State `userDataDir` is created and cleaned up per launch when DNS is enabled.
+- Verification continues to return `true | false | null` semantics used by screenshot flow.
 
 ## Quick Validation Commands
 

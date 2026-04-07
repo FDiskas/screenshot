@@ -155,6 +155,10 @@ export const cacheService = {
 
     valid.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     const latest = valid[0];
+    if (!latest) {
+      return null;
+    }
+
     return {
       domain,
       createdAt: latest.createdAt.toISOString(),

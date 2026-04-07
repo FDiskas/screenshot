@@ -3,52 +3,12 @@ import sharp from "sharp";
 import { CONFIG } from "../config";
 import { applyConsentHiding } from "./screenshot-consent";
 import { applyMediaBlur } from "./screenshot-blur";
-
-const hasDnsAnswer = async (
-  hostname: string,
-  recordType: "A" | "AAAA",
-): Promise<boolean> => {
-  const dnsUrl = `${CONFIG.screenshot.dns.preflightJsonEndpoint}?name=${encodeURIComponent(hostname)}&type=${recordType}`;
-  const timeoutSignal = AbortSignal.timeout(
-    CONFIG.screenshot.dns.preflightLookupTimeoutMs,
-  );
-  const response = await fetch(dnsUrl, {
-    headers: {
-      accept: "application/dns-json",
-    },
-    signal: timeoutSignal,
-  });
-
-  if (!response.ok) {
-    return false;
-  }
-
-  const data = (await response.json()) as {
-    Status?: number;
-    Answer?: Array<{ data?: string }>;
-  };
-  return (
-    data.Status === 0 &&
-    Array.isArray(data.Answer) &&
-    data.Answer.some((answer) => !!answer?.data)
-  );
-};
-
-const resolveViaConfiguredDns = async (hostname: string): Promise<boolean> => {
-  if (!CONFIG.screenshot.dns.enabled) {
-    return false;
-  }
-
-  try {
-    // Some hosts may be IPv6-only, so probe both A and AAAA.
-    if (await hasDnsAnswer(hostname, "A")) {
-      return true;
-    }
-    return await hasDnsAnswer(hostname, "AAAA");
-  } catch {
-    return false;
-  }
-};
+import {
+  cleanupDnsLaunchConfig,
+  createDnsLaunchConfig,
+  resolveViaConfiguredDns,
+  verifyConfiguredDnsProfile,
+} from "./dns";
 
 export interface ScreenshotOptions {
   url: string;
@@ -101,6 +61,7 @@ export const captureScreenshot = async (
   } = options;
 
   let browser;
+  let userDataDir: string | null = null;
   try {
     // Only allow HTTPS
     if (!url.startsWith(CONFIG.screenshot.allowedProtocol)) {
@@ -120,18 +81,15 @@ export const captureScreenshot = async (
       dnsProviderAvailable = false;
     }
 
-    const launchArgs = [...CONFIG.screenshot.browserLaunchArgs];
-    if (CONFIG.screenshot.dns.enabled) {
-      launchArgs.push(
-        "--enable-features=DnsOverHttps",
-        "--dns-over-https-mode=secure",
-        `--dns-over-https-templates=${CONFIG.screenshot.dns.browserDohTemplate}`,
-      );
-    }
+    const dnsLaunchConfig = await createDnsLaunchConfig(
+      CONFIG.screenshot.browserLaunchArgs,
+    );
+    userDataDir = dnsLaunchConfig.userDataDir;
 
     browser = await puppeteer.launch({
       headless: true,
-      args: launchArgs,
+      args: dnsLaunchConfig.launchArgs,
+      ...(userDataDir ? { userDataDir } : {}),
     });
 
     if (CONFIG.screenshot.dns.enabled && !dnsProviderAvailable) {
@@ -145,6 +103,28 @@ export const captureScreenshot = async (
       width: CONFIG.screenshot.desktopViewportWidth,
       height: CONFIG.screenshot.desktopViewportHeight,
     });
+
+    if (CONFIG.screenshot.dns.enabled) {
+      const profileMatches = await verifyConfiguredDnsProfile(page);
+      if (profileMatches === false) {
+        const message = `${CONFIG.screenshot.dns.providerName} profile mismatch for ${url}; expected ${CONFIG.screenshot.dns.expectedProfileId}.`;
+        if (CONFIG.screenshot.dns.enforceProfileMatch) {
+          return {
+            buffer: null,
+            status: 503,
+            error: message,
+          };
+        }
+        console.warn(message);
+      }
+
+      if (profileMatches === null) {
+        console.info(
+          `${CONFIG.screenshot.dns.providerName} profile verification endpoint was not reachable before capture.`,
+        );
+      }
+    }
+
     await page.emulateMediaFeatures([
       {
         name: "prefers-color-scheme",
@@ -240,6 +220,9 @@ export const captureScreenshot = async (
   } finally {
     if (browser) {
       await browser.close();
+    }
+    if (userDataDir) {
+      await cleanupDnsLaunchConfig(userDataDir);
     }
   }
 };

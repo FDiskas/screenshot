@@ -2,6 +2,8 @@
 
 A high-performance screenshot service built with **Bun**, **Puppeteer**, **Hono**, and **React**. This service captures high-fidelity 296x166 px screenshots with domain-level caching and a built-in safety API.
 
+It also applies private DNS filtering during capture to block many malware/ad domains and hides common cookie-consent popups before rendering screenshots.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -46,6 +48,14 @@ _The service will start at `http://localhost:3001`._
 - **Auto Validation**: Rejects non-HTTPS URLs and check against `is.coders.lt` safety API.
 - **Redirect Support**: Fully follows browser redirects.
 - **Domain Capture**: Requests are normalized to domain-only screenshots (path/query are ignored).
+- **Private DNS Filtering**: Browser capture runs with secure DNS-over-HTTPS (private profile) to reduce ads/malware content in rendered screenshots.
+- **Consent Cleanup**: Common cookie and consent overlays are hidden before capture for cleaner previews.
+
+## 🔒 Capture Hygiene
+
+- **Private DNS-over-HTTPS**: SnapService launches Chromium with secure DoH using a private DNS template from project config.
+- **Ad/Malware Domain Blocking**: DNS-level filtering helps prevent known ad/tracker/malware hosts from loading in screenshots.
+- **Cookie Popup Suppression**: The capture pipeline injects style rules and runtime DOM cleanup to hide common cookie/consent banners.
 
 ## 🧹 Maintenance & Storage
 
