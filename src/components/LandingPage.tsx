@@ -10,7 +10,7 @@ export interface ScreenshotRecord {
   created_at: string;
 }
 
-export const LandingPage: FC<{ latest: ScreenshotRecord[] }> = ({ latest }) => {
+export const LandingPage: FC<{ latest: ScreenshotRecord[]; origin: string }> = ({ latest, origin }) => {
   return (
     <div className="flex flex-col gap-24">
       {/* Hero Section */}
@@ -93,7 +93,7 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[] }> = ({ latest }) => {
           <div className="bg-muted/30 rounded-2xl p-6 border border-dashed text-center">
             <p className="text-sm text-muted-foreground mb-4">API Preview</p>
             <code className="block bg-background/50 p-4 rounded-lg text-xs md:text-sm text-primary overflow-x-auto whitespace-nowrap">
-              GET https://snapservice.app/api/screenshot?url=https://yoursite.com
+              GET {origin}/api/screenshot?url=https://yoursite.com
             </code>
           </div>
 

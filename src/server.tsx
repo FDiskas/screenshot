@@ -27,7 +27,8 @@ app.use(
 // Routes
 app.get("/", (c) => {
   const latest = dbService.getLatest();
-  return c.render(<LandingPage latest={latest} />, { title: "SnapService | Home" });
+  const origin = new URL(c.req.url).origin;
+  return c.render(<LandingPage latest={latest} origin={origin} />, { title: "SnapService | Home" });
 });
 
 app.get("/api/screenshot", async (c) => {
