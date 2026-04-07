@@ -34,7 +34,7 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[] }> = ({ latest }) => {
             <a href="#demo" className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-4 rounded-xl text-lg font-semibold shadow-xl shadow-primary/25 transition-all hover:scale-105 inline-flex items-center gap-2 group">
               Try the Demo <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </a>
-            <a href="https://github.com" className="bg-muted text-muted-foreground hover:bg-muted/80 px-8 py-4 rounded-xl text-lg font-semibold border border-border/50 transition-all hover:scale-105 inline-flex items-center gap-2">
+            <a href="https://github.com/FDiskas/screenshot" className="bg-muted text-muted-foreground hover:bg-muted/80 px-8 py-4 rounded-xl text-lg font-semibold border border-border/50 transition-all hover:scale-105 inline-flex items-center gap-2">
               <ImageIcon className="h-5 w-5" /> View on GitHub
             </a>
           </div>
@@ -101,7 +101,7 @@ export const LandingPage: FC<{ latest: ScreenshotRecord[] }> = ({ latest }) => {
           <div id="demo-result" className="mt-12 hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <p className="text-sm text-center text-muted-foreground mb-4 font-medium uppercase tracking-wider italic">Snapshot Result</p>
             <div className="mx-auto max-w-[387px] bg-muted aspect-[387/217] rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-black ring-1 ring-primary/20">
-              <img id="result-img" src="" alt="Screenshot Preview" className="w-full h-full object-cover" />
+              <img id="result-img" alt="Screenshot Preview" className="w-full h-full object-cover" />
             </div>
             <p className="text-center mt-4 text-xs text-muted-foreground">Refreshing every few seconds until captured...</p>
           </div>

@@ -1,4 +1,5 @@
 import type { FC, PropsWithChildren } from "react";
+import { Sun, Moon } from "lucide-react";
 
 export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, title = "SnapService - Quick URL Screenshots" }) => {
   return (
@@ -11,6 +12,7 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
         <script src="https://cdn.tailwindcss.com"></script>
         <script>{`
           tailwind.config = {
+            darkMode: 'class',
             theme: {
               container: {
                 center: true,
@@ -64,6 +66,20 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
+        <script>{`
+          (function() {
+            try {
+              const savedTheme = localStorage.getItem('theme');
+              const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+              const theme = savedTheme || systemTheme;
+              if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+              } else {
+                document.documentElement.classList.remove('dark');
+              }
+            } catch (e) {}
+          })();
+        `}</script>
         <style>{`
           body { font-family: 'Inter', sans-serif; }
           h1, h2, h3 { font-family: 'Outfit', sans-serif; }
@@ -81,6 +97,14 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
               <a href="#demo" className="text-sm font-medium hover:text-primary transition-colors">Demo</a>
               <a href="#gallery" className="text-sm font-medium hover:text-primary transition-colors">Gallery</a>
               <div className="h-8 w-[1px] bg-border mx-2" />
+              <button 
+                id="theme-toggle"
+                className="p-2 rounded-md hover:bg-accent transition-colors"
+                aria-label="Toggle theme"
+              >
+                <Sun className="h-5 w-5 dark:hidden" />
+                <Moon className="h-5 w-5 hidden dark:block" />
+              </button>
               <button className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-all hover:scale-105">Get Started</button>
             </nav>
           </div>
@@ -98,6 +122,12 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
             </div>
           </div>
         </footer>
+        <script>{`
+          document.getElementById('theme-toggle').addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          });
+        `}</script>
       </body>
     </html>
   );
