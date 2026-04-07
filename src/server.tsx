@@ -5,9 +5,9 @@ import { Layout } from "./components/layout";
 import { LandingPage } from "./components/LandingPage";
 import { dbService } from "./db";
 import { checkSafety } from "./lib/safety";
-import { processScreenshot } from "./lib/worker";
 import { getStatusPlaceholder } from "./lib/placeholder";
 import { cacheService } from "./lib/cache";
+import { hatchet } from "./lib/hatchet";
 
 const app = new Hono();
 
@@ -77,8 +77,12 @@ app.get("/api/screenshot", async (c) => {
   }
 
   // 4. Async process and return placeholder
-  // We don't await processScreenshot
-  processScreenshot(url, width, height).catch(err => console.error("Worker error:", err));
+  // We trigger Hatchet event instead of direct worker call
+  hatchet.event.push("screenshot:create", {
+    url,
+    width,
+    height
+  }).catch(err => console.error("Hatchet trigger error:", err));
 
   const processingPlaceholder = await getStatusPlaceholder(202, width, height);
   return c.body(new Uint8Array(processingPlaceholder), 200, { 
