@@ -129,6 +129,12 @@ export const captureScreenshot = async (
       width: CONFIG.screenshot.desktopViewportWidth,
       height: CONFIG.screenshot.desktopViewportHeight,
     });
+    await page.emulateMediaFeatures([
+      {
+        name: "prefers-color-scheme",
+        value: CONFIG.screenshot.emulatedColorScheme,
+      },
+    ]);
 
     page.setDefaultNavigationTimeout(CONFIG.screenshot.responseTimeoutMs);
     page.setDefaultTimeout(CONFIG.screenshot.responseTimeoutMs);
