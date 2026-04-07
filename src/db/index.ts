@@ -7,10 +7,22 @@ mkdirSync(DB_DIR, { recursive: true });
 
 const db = new Database(join(DB_DIR, "screenshots.db"));
 
-// Enable WAL mode for better concurrency between server and worker
-db.exec("PRAGMA journal_mode = WAL;");
+// Set busy timeout early so concurrent processes wait for each other
 db.exec("PRAGMA busy_timeout = 5000;");
-db.exec("PRAGMA synchronous = NORMAL;");
+
+try {
+  // Check if we already are in WAL mode to avoid unnecessary exclusive locks
+  const result = db.query("PRAGMA journal_mode;").get() as { journal_mode: string } | undefined;
+  if (result?.journal_mode !== "wal") {
+    db.exec("PRAGMA journal_mode = WAL;");
+  }
+  db.exec("PRAGMA synchronous = NORMAL;");
+} catch (e) {
+  // If we get a "database is locked" error here, it means another process 
+  // (like the worker or server) is currently setting the PRAGMAs.
+  // We can safely ignore this and continue, as the DB will be configured by the winner.
+  console.log("Database busy during WAL initialization, skipping...");
+}
 
 // Force schema update if needed (Drop and recreate once to ensure UNIQUE constraint)
 // db.run("DROP TABLE IF EXISTS screenshots;"); 
