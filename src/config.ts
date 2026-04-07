@@ -36,7 +36,8 @@ export const CONFIG = {
     },
     dns: {
       preferAdguard: true,
-      dohTemplate: "https://dns.adguard.com/dns-query",
+      preflightJsonEndpoint: "https://dns.adguard.com/dns-query",
+      browserDohTemplate: "https://dns.adguard.com/dns-query{?dns}",
       preflightLookupTimeoutMs: 2_000,
     },
   },

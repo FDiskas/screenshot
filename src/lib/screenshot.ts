@@ -10,7 +10,7 @@ const resolveViaAdGuardDns = async (hostname: string): Promise<boolean> => {
   }
 
   try {
-    const dnsUrl = `${CONFIG.screenshot.dns.dohTemplate}?name=${encodeURIComponent(hostname)}&type=A`;
+    const dnsUrl = `${CONFIG.screenshot.dns.preflightJsonEndpoint}?name=${encodeURIComponent(hostname)}&type=A`;
     const timeoutSignal = AbortSignal.timeout(
       CONFIG.screenshot.dns.preflightLookupTimeoutMs,
     );
@@ -109,7 +109,7 @@ export const captureScreenshot = async (
       launchArgs.push(
         "--enable-features=DnsOverHttps",
         "--dns-over-https-mode=secure",
-        `--dns-over-https-templates=${CONFIG.screenshot.dns.dohTemplate}`,
+        `--dns-over-https-templates=${CONFIG.screenshot.dns.browserDohTemplate}`,
       );
     }
 
