@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --hot src/server.tsx",
+    "dev": "concurrently \"npx bun --hot src/worker-runner.ts\" \"npx bun --hot src/server.tsx\"",
     "start": "concurrently \"npx bun src/worker-runner.ts\" \"npx bun src/server.tsx\"",
     "test": "vitest",
     "cleanup": "bun src/db/cleanup.ts",

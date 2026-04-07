@@ -2,16 +2,17 @@ import { hatchet } from "./lib/hatchet";
 import { ScreenshotWorkflow } from "./lib/workflows/screenshot.workflow";
 import { CleanupWorkflow } from "./lib/workflows/cleanup.workflow";
 import { PurgeWorkflow } from "./lib/workflows/purge.workflow";
+import { CONFIG } from "./config";
 
 async function main() {
-  const worker = await hatchet.worker("screenshot-worker", {
-    slots: 1,
+  const worker = await hatchet.worker(CONFIG.worker.name, {
+    slots: CONFIG.worker.slots,
   });
   await worker.registerWorkflow(ScreenshotWorkflow);
   await worker.registerWorkflow(CleanupWorkflow);
   await worker.registerWorkflow(PurgeWorkflow);
-  console.log("Hatchet worker started and listening for screenshot events...");
   await worker.start();
+  console.log("Hatchet worker started and listening for screenshot events...");
 }
 
 main().catch(console.error);

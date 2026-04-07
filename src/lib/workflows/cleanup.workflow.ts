@@ -1,15 +1,16 @@
 import { hatchet } from "../hatchet";
 import { runCleanup } from "../../db/cleanup";
+import { CONFIG } from "../../config";
 
 export const CleanupWorkflow = hatchet.workflow({
-  name: "cleanup-workflow",
+  name: CONFIG.workflows.cleanup.name,
   on: {
-    cron: "0 0 * * *", // Every night at midnight
+    cron: CONFIG.workflows.cleanup.cron,
   },
 });
 
 CleanupWorkflow.task({
-  name: "run-cleanup-task",
+  name: CONFIG.workflows.cleanup.taskName,
   fn: async () => {
     console.log("[Hatchet] Running scheduled cleanup...");
     const result = await runCleanup();

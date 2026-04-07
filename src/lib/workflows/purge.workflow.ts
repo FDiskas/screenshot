@@ -1,12 +1,13 @@
 import { hatchet } from "../hatchet";
 import { runPurge } from "../../db/purge";
+import { CONFIG } from "../../config";
 
 export const PurgeWorkflow = hatchet.workflow({
-  name: "purge-workflow",
+  name: CONFIG.workflows.purge.name,
 });
 
 PurgeWorkflow.task({
-  name: "run-purge-task",
+  name: CONFIG.workflows.purge.taskName,
   fn: async () => {
     console.log("[Hatchet] Running scheduled purge...");
     const result = await runPurge();

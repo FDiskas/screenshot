@@ -1,49 +1,6 @@
-import { Database } from "bun:sqlite";
-import { join } from "node:path";
-import { mkdirSync } from "node:fs";
-
-const DB_DIR = join(process.cwd(), "data");
-mkdirSync(DB_DIR, { recursive: true });
-
-const db = new Database(join(DB_DIR, "screenshots.db"));
-
-// Set busy timeout early so concurrent processes wait for each other
-db.exec("PRAGMA busy_timeout = 5000;");
-
-try {
-  // Check if we already are in WAL mode to avoid unnecessary exclusive locks
-  const result = db.query("PRAGMA journal_mode;").get() as { journal_mode: string } | undefined;
-  if (result?.journal_mode !== "wal") {
-    db.exec("PRAGMA journal_mode = WAL;");
-  }
-  db.exec("PRAGMA synchronous = NORMAL;");
-} catch (e) {
-  // If we get a "database is locked" error here, it means another process 
-  // (like the worker or server) is currently setting the PRAGMAs.
-  // We can safely ignore this and continue, as the DB will be configured by the winner.
-  console.log("Database busy during WAL initialization, skipping...");
-}
-
-// Force schema update if needed (Drop and recreate once to ensure UNIQUE constraint)
-// db.run("DROP TABLE IF EXISTS screenshots;"); 
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS screenshots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    url TEXT NOT NULL UNIQUE,
-    domain TEXT NOT NULL,
-    status INTEGER NOT NULL,
-    image_path TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL
-  )
-`);
-
-db.run(`
-  CREATE INDEX IF NOT EXISTS idx_domain ON screenshots(domain);
-  CREATE INDEX IF NOT EXISTS idx_expires ON screenshots(expires_at);
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_url_unique ON screenshots(url);
-`);
+import { createHash } from "node:crypto";
+import { cacheService } from "../lib/cache";
+import { CONFIG } from "../config";
 
 export interface ScreenshotRecord {
   id: number;
@@ -55,31 +12,54 @@ export interface ScreenshotRecord {
   expires_at: string;
 }
 
+const toSqlDate = (date: Date): string => {
+  return date.toISOString().slice(0, 19).replace("T", " ");
+};
+
+const addOneMonth = (date: Date): Date => {
+  const copy = new Date(date);
+  copy.setMonth(copy.getMonth() + CONFIG.retention.months);
+  return copy;
+};
+
+const toRecord = (shot: {
+  domain: string;
+  imagePath: string;
+  createdAt: string;
+}): ScreenshotRecord => {
+  const created = new Date(shot.createdAt);
+  const idHex = createHash("sha1")
+    .update(`${shot.domain}-${shot.createdAt}`)
+    .digest("hex")
+    .slice(0, 8);
+
+  return {
+    id: parseInt(idHex, 16),
+    url: `https://${shot.domain}`,
+    domain: shot.domain,
+    status: 200,
+    image_path: shot.imagePath,
+    created_at: toSqlDate(created),
+    expires_at: toSqlDate(addOneMonth(created)),
+  };
+};
+
 export const dbService = {
   getLatest: (limit = 9): ScreenshotRecord[] => {
-    return db.query("SELECT * FROM screenshots WHERE status = 200 ORDER BY created_at DESC LIMIT ?").all(limit) as ScreenshotRecord[];
+    return cacheService.listLatestByDomain(limit).map(toRecord);
   },
 
   getByUrl: (url: string): ScreenshotRecord | undefined => {
-    return db.query("SELECT * FROM screenshots WHERE url = ? AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1").get(url) as ScreenshotRecord;
-  },
-
-  add: (record: Omit<ScreenshotRecord, "id" | "created_at">) => {
-    return db.run(
-      `INSERT INTO screenshots (url, domain, status, image_path, expires_at) 
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(url) DO UPDATE SET 
-         status = excluded.status,
-         image_path = excluded.image_path,
-         expires_at = excluded.expires_at,
-         created_at = CURRENT_TIMESTAMP`,
-      [record.url, record.domain, record.status, record.image_path, record.expires_at]
-    );
+    const domain = cacheService.getDomain(url);
+    const latest = cacheService.getLatestForDomain(domain);
+    return latest ? toRecord(latest) : undefined;
   },
 
   cleanup: () => {
-    return db.run("DELETE FROM screenshots WHERE expires_at < datetime('now')");
-  }
-};
+    return cacheService.cleanupExpired();
+  },
 
-export default db;
+  purgeAll: () => {
+    cacheService.purgeAll();
+  },
+};
