@@ -22,6 +22,7 @@ const screenshotCacheControl = `public, max-age=${screenshotMaxAgeSeconds}, immu
 
 // Static files
 app.use("/index.css", serveStatic({ path: "./src/index.css" }));
+app.use("/favicon.svg", serveStatic({ path: "./public/favicon.svg" }));
 app.use("/screenshots/*", async (c, next) => {
   await next();
   if (c.res.ok) {
