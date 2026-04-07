@@ -4,33 +4,47 @@ import { CONFIG } from "../config";
 import { applyConsentHiding } from "./screenshot-consent";
 import { applyMediaBlur } from "./screenshot-blur";
 
-const resolveViaAdGuardDns = async (hostname: string): Promise<boolean> => {
-  if (!CONFIG.screenshot.dns.preferAdguard) {
+const hasDnsAnswer = async (
+  hostname: string,
+  recordType: "A" | "AAAA",
+): Promise<boolean> => {
+  const dnsUrl = `${CONFIG.screenshot.dns.preflightJsonEndpoint}?name=${encodeURIComponent(hostname)}&type=${recordType}`;
+  const timeoutSignal = AbortSignal.timeout(
+    CONFIG.screenshot.dns.preflightLookupTimeoutMs,
+  );
+  const response = await fetch(dnsUrl, {
+    headers: {
+      accept: "application/dns-json",
+    },
+    signal: timeoutSignal,
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const data = (await response.json()) as {
+    Status?: number;
+    Answer?: Array<{ data?: string }>;
+  };
+  return (
+    data.Status === 0 &&
+    Array.isArray(data.Answer) &&
+    data.Answer.some((answer) => !!answer?.data)
+  );
+};
+
+const resolveViaConfiguredDns = async (hostname: string): Promise<boolean> => {
+  if (!CONFIG.screenshot.dns.enabled) {
     return false;
   }
 
   try {
-    const dnsUrl = `${CONFIG.screenshot.dns.preflightJsonEndpoint}?name=${encodeURIComponent(hostname)}&type=A`;
-    const timeoutSignal = AbortSignal.timeout(
-      CONFIG.screenshot.dns.preflightLookupTimeoutMs,
-    );
-    const response = await fetch(dnsUrl, {
-      headers: {
-        accept: "application/dns-json",
-      },
-      signal: timeoutSignal,
-    });
-
-    if (!response.ok) {
-      return false;
+    // Some hosts may be IPv6-only, so probe both A and AAAA.
+    if (await hasDnsAnswer(hostname, "A")) {
+      return true;
     }
-
-    const data = (await response.json()) as {
-      Answer?: Array<{ data?: string }>;
-    };
-    return (
-      Array.isArray(data.Answer) && data.Answer.some((answer) => !!answer?.data)
-    );
+    return await hasDnsAnswer(hostname, "AAAA");
   } catch {
     return false;
   }
@@ -97,15 +111,17 @@ export const captureScreenshot = async (
       };
     }
 
-    let adguardDnsAvailable = false;
+    let dnsProviderAvailable = false;
     try {
-      adguardDnsAvailable = await resolveViaAdGuardDns(new URL(url).hostname);
+      dnsProviderAvailable = await resolveViaConfiguredDns(
+        new URL(url).hostname,
+      );
     } catch {
-      adguardDnsAvailable = false;
+      dnsProviderAvailable = false;
     }
 
     const launchArgs = [...CONFIG.screenshot.browserLaunchArgs];
-    if (CONFIG.screenshot.dns.preferAdguard) {
+    if (CONFIG.screenshot.dns.enabled) {
       launchArgs.push(
         "--enable-features=DnsOverHttps",
         "--dns-over-https-mode=secure",
@@ -118,9 +134,9 @@ export const captureScreenshot = async (
       args: launchArgs,
     });
 
-    if (CONFIG.screenshot.dns.preferAdguard && !adguardDnsAvailable) {
-      console.warn(
-        `AdGuard DNS preflight lookup failed for ${url}, continuing with browser resolver.`,
+    if (CONFIG.screenshot.dns.enabled && !dnsProviderAvailable) {
+      console.info(
+        `${CONFIG.screenshot.dns.providerName} DNS preflight probe could not verify ${url}; continuing with secure browser DoH configuration.`,
       );
     }
 
