@@ -77,8 +77,22 @@ app.get("/api/screenshot", async (c) => {
   }
 
   // 4. Async process and return placeholder
+  // Record that we are processing immediately so subsequent refreshes see it
+  const domain = cacheService.getDomain(url);
+  const oneMonthFromNow = new Date();
+  oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+  const expiresAt = oneMonthFromNow.toISOString().slice(0, 19).replace('T', ' ');
+
+  dbService.add({
+    url,
+    domain,
+    status: 202,
+    image_path: null,
+    expires_at: expiresAt
+  });
+
   // We trigger Hatchet event instead of direct worker call
-  hatchet.event.push("screenshot:create", {
+  hatchet.events.push("screenshot:create", {
     url,
     width,
     height

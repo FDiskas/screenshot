@@ -21,20 +21,12 @@ ScreenshotWorkflow.task({
   name: "process-screenshot",
   fn: async (input, ctx) => {
     const { url, width, height } = input;
+    console.log(`[Workflow] Processing screenshot for: ${url} (${width}x${height})`);
 
     const domain = cacheService.getDomain(url);
     const oneMonthFromNow = new Date();
     oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
     const expiresAt = oneMonthFromNow.toISOString().slice(0, 19).replace('T', ' ');
-
-    // Record that we are processing (Update DB to 202)
-    dbService.add({
-      url,
-      domain,
-      status: 202,
-      image_path: null,
-      expires_at: expiresAt
-    });
 
     try {
       const result = await captureScreenshot({ url, width, height });
