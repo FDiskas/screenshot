@@ -105,7 +105,7 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
                 <Sun className="h-5 w-5 dark:hidden" />
                 <Moon className="h-5 w-5 hidden dark:block" />
               </button>
-              <button className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-all hover:scale-105">Get Started</button>
+              <a href="/docs" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-all hover:scale-105">Get Started</a>
             </nav>
           </div>
         </header>

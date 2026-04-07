@@ -3,6 +3,7 @@ import { serveStatic } from "hono/bun";
 import { reactRenderer } from "@hono/react-renderer";
 import { Layout } from "./components/layout";
 import { LandingPage } from "./components/LandingPage";
+import { DocsPage } from "./components/DocsPage";
 import { dbService } from "./db";
 import { checkSafety } from "./lib/safety";
 import { getStatusPlaceholder } from "./lib/placeholder";
@@ -27,8 +28,20 @@ app.use(
 // Routes
 app.get("/", (c) => {
   const latest = dbService.getLatest();
-  const origin = new URL(c.req.url).origin;
+  // Better origin detection
+  const proto = c.req.header("x-forwarded-proto") || new URL(c.req.url).protocol.replace(":", "");
+  const host = c.req.header("x-forwarded-host") || c.req.header("host");
+  const origin = host ? `${proto}://${host}` : new URL(c.req.url).origin;
+  
   return c.render(<LandingPage latest={latest} origin={origin} />, { title: "SnapService | Home" });
+});
+
+app.get("/docs", (c) => {
+  const proto = c.req.header("x-forwarded-proto") || new URL(c.req.url).protocol.replace(":", "");
+  const host = c.req.header("x-forwarded-host") || c.req.header("host");
+  const origin = host ? `${proto}://${host}` : new URL(c.req.url).origin;
+  
+  return c.render(<DocsPage origin={origin} />, { title: "SnapService | Documentation" });
 });
 
 app.get("/api/screenshot", async (c) => {
@@ -105,7 +118,7 @@ app.get("/api/screenshot", async (c) => {
   });
 });
 
-console.log("Server running at http://localhost:3001");
+console.log(`Server starting on port ${app.fetch.toString().includes('3001') ? 3001 : 3001}...`); // Dynamic or generic log
 
 export default {
   port: 3001,
