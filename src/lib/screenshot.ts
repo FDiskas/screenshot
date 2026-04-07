@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer";
+import type { Page } from "puppeteer";
 import sharp from "sharp";
 import { CONFIG } from "../config";
 import { applyConsentHiding } from "./screenshot-consent";
@@ -22,6 +23,26 @@ export interface ScreenshotResult {
   error?: string;
   finalUrl?: string;
 }
+
+const applyPageZoom = async (page: Page): Promise<void> => {
+  const zoomPercent: number = CONFIG.screenshot.pageZoomPercent;
+  if (
+    !Number.isFinite(zoomPercent) ||
+    zoomPercent <= 0 ||
+    zoomPercent === 100
+  ) {
+    return;
+  }
+
+  const zoomFactor = zoomPercent / 100;
+  await page.evaluate((factor: number) => {
+    const html = (globalThis as any).document?.documentElement;
+    if (!html) {
+      return;
+    }
+    html.style.zoom = String(factor);
+  }, zoomFactor);
+};
 
 const escapeXml = (value: string): string => {
   return value
@@ -161,6 +182,8 @@ export const captureScreenshot = async (
     if (CONFIG.screenshot.blurLargeMedia.enabled) {
       await applyMediaBlur(page, CONFIG.screenshot.blurLargeMedia);
     }
+
+    await applyPageZoom(page);
 
     // Take screenshot of the desktop viewport
     const rawBuffer = (await page.screenshot({ type: "png" })) as Buffer;
