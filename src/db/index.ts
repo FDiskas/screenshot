@@ -7,6 +7,11 @@ mkdirSync(DB_DIR, { recursive: true });
 
 const db = new Database(join(DB_DIR, "screenshots.db"));
 
+// Enable WAL mode for better concurrency between server and worker
+db.exec("PRAGMA journal_mode = WAL;");
+db.exec("PRAGMA busy_timeout = 5000;");
+db.exec("PRAGMA synchronous = NORMAL;");
+
 // Force schema update if needed (Drop and recreate once to ensure UNIQUE constraint)
 // db.run("DROP TABLE IF EXISTS screenshots;"); 
 
