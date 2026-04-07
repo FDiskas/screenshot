@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { rmSync, mkdirSync } from "node:fs";
 import db from "./index";
 
-async function runPurge() {
+export async function runPurge() {
   console.log("🧨 Starting FULL PURGE of screenshots...");
   
   try {
@@ -20,11 +20,16 @@ async function runPurge() {
     console.log("✅ Deleted all screenshot files and recreated directory.");
     
     console.log("✨ Purge complete.");
-    process.exit(0);
+    return { success: true };
   } catch (error) {
     console.error("❌ Purge failed:", error);
-    process.exit(1);
+    throw error;
   }
 }
 
-runPurge();
+// Only run immediately if executed directly via Bun (CLI)
+if (import.meta.main) {
+  runPurge()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+}

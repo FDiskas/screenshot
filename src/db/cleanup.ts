@@ -3,7 +3,7 @@ import { unlink } from "node:fs/promises";
 import { join } from "node:path";
 import db from "./index";
 
-async function runCleanup() {
+export async function runCleanup() {
   console.log("🚀 Starting screenshot maintenance/cleanup...");
   
   try {
@@ -31,11 +31,16 @@ async function runCleanup() {
     console.log(`✅ Database records purged.`);
     
     console.log("✨ Maintenance complete.");
-    process.exit(0);
+    return { success: true, deleted: expiredImages.length };
   } catch (error) {
     console.error("❌ Cleanup failed:", error);
-    process.exit(1);
+    throw error;
   }
 }
 
-runCleanup();
+// Only run immediately if executed directly via Bun (CLI)
+if (import.meta.main) {
+  runCleanup()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+}
