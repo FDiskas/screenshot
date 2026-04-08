@@ -44,8 +44,8 @@ export const CONFIG = {
     dns: {
       enabled: true,
       providerName: "NextDNS",
-      preflightJsonEndpoint: "https://dns.nextdns.io/364ec7",
-      browserDohTemplate: "https://dns.nextdns.io/364ec7{?dns}",
+      preflightJsonEndpoint: "https://364ec7.dns.nextdns.io",
+      browserDohTemplate: "https://364ec7.dns.nextdns.io/dns-query{?dns}",
       expectedProfileId: "364ec7",
       verificationEndpoint: "https://test.nextdns.io",
       enforceProfileMatch: false,

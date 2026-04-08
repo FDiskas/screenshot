@@ -127,7 +127,8 @@ export const captureScreenshot = async (
     });
 
     if (CONFIG.screenshot.dns.enabled) {
-      const profileVerification = await verifyConfiguredDnsProfileDetailed(page);
+      const profileVerification =
+        await verifyConfiguredDnsProfileDetailed(page);
       if (profileVerification.matches === false) {
         const message =
           profileVerification.reason === "doh-inactive"
