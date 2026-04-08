@@ -59,6 +59,22 @@ interface DnsVerificationDebug {
   error?: string;
 }
 
+export type DnsVerificationReason =
+  | "unreachable"
+  | "doh-inactive"
+  | "profile-match"
+  | "profile-mismatch"
+  | "profile-not-available";
+
+export interface DnsProfileVerificationResult {
+  matches: boolean | null;
+  reason: DnsVerificationReason;
+  profile: string | null;
+  expectedProfileId: string | null;
+  protocol: string | null;
+  statusValue: string | null;
+}
+
 const nonEmptyStringOrNull = (value: unknown): string | null => {
   return typeof value === "string" && value.length > 0 ? value : null;
 };
@@ -176,9 +192,23 @@ const fetchDnsVerificationDebug = async (
 export const verifyConfiguredDnsProfile = async (
   page: Page,
 ): Promise<boolean | null> => {
+  const result = await verifyConfiguredDnsProfileDetailed(page);
+  return result.matches;
+};
+
+export const verifyConfiguredDnsProfileDetailed = async (
+  page: Page,
+): Promise<DnsProfileVerificationResult> => {
   const verification = await fetchDnsVerificationDebug(page);
   if (verification.statusValue === null && verification.error) {
-    return null;
+    return {
+      matches: null,
+      reason: "unreachable",
+      profile: verification.profile,
+      expectedProfileId: CONFIG.screenshot.dns.expectedProfileId ?? null,
+      protocol: verification.protocol,
+      statusValue: verification.statusValue,
+    };
   }
 
   // Treat successful DoH status as the primary signal that browser DNS is configured.
@@ -187,21 +217,50 @@ export const verifyConfiguredDnsProfile = async (
     verification.protocol?.toUpperCase() === "DOH";
 
   if (!isDohActive) {
-    return false;
+    return {
+      matches: false,
+      reason: "doh-inactive",
+      profile: verification.profile,
+      expectedProfileId: CONFIG.screenshot.dns.expectedProfileId ?? null,
+      protocol: verification.protocol,
+      statusValue: verification.statusValue,
+    };
   }
 
   if (!CONFIG.screenshot.dns.expectedProfileId) {
-    return true;
+    return {
+      matches: true,
+      reason: "profile-not-available",
+      profile: verification.profile,
+      expectedProfileId: null,
+      protocol: verification.protocol,
+      statusValue: verification.statusValue,
+    };
   }
 
   if (!verification.profile) {
-    return true;
+    return {
+      matches: true,
+      reason: "profile-not-available",
+      profile: verification.profile,
+      expectedProfileId: CONFIG.screenshot.dns.expectedProfileId,
+      protocol: verification.protocol,
+      statusValue: verification.statusValue,
+    };
   }
 
-  return (
+  const matches =
     verification.profile.toLowerCase() ===
-    CONFIG.screenshot.dns.expectedProfileId.toLowerCase()
-  );
+    CONFIG.screenshot.dns.expectedProfileId.toLowerCase();
+
+  return {
+    matches,
+    reason: matches ? "profile-match" : "profile-mismatch",
+    profile: verification.profile,
+    expectedProfileId: CONFIG.screenshot.dns.expectedProfileId,
+    protocol: verification.protocol,
+    statusValue: verification.statusValue,
+  };
 };
 
 const buildBrowserDohConfig = (): string => {

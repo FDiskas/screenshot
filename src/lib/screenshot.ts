@@ -9,7 +9,7 @@ import {
   cleanupDnsLaunchConfig,
   createDnsLaunchConfig,
   resolveViaConfiguredDns,
-  verifyConfiguredDnsProfile,
+  verifyConfiguredDnsProfileDetailed,
 } from "./dns";
 
 export interface ScreenshotOptions {
@@ -127,9 +127,12 @@ export const captureScreenshot = async (
     });
 
     if (CONFIG.screenshot.dns.enabled) {
-      const profileMatches = await verifyConfiguredDnsProfile(page);
-      if (profileMatches === false) {
-        const message = `${CONFIG.screenshot.dns.providerName} profile mismatch for ${url}; expected ${CONFIG.screenshot.dns.expectedProfileId}.`;
+      const profileVerification = await verifyConfiguredDnsProfileDetailed(page);
+      if (profileVerification.matches === false) {
+        const message =
+          profileVerification.reason === "doh-inactive"
+            ? `${CONFIG.screenshot.dns.providerName} DoH verification failed for ${url}; expected status=ok and protocol=DOH but got status=${profileVerification.statusValue ?? "unknown"}, protocol=${profileVerification.protocol ?? "unknown"}.`
+            : `${CONFIG.screenshot.dns.providerName} profile mismatch for ${url}; expected ${profileVerification.expectedProfileId ?? "(not set)"}, got ${profileVerification.profile ?? "unknown"}.`;
         if (CONFIG.screenshot.dns.enforceProfileMatch) {
           return {
             buffer: null,
@@ -137,10 +140,12 @@ export const captureScreenshot = async (
             error: message,
           };
         }
-        console.info(`${message} Continuing capture because enforceProfileMatch=false.`);
+        console.info(
+          `${message} Continuing capture because enforceProfileMatch=false.`,
+        );
       }
 
-      if (profileMatches === null) {
+      if (profileVerification.matches === null) {
         console.info(
           `${CONFIG.screenshot.dns.providerName} profile verification endpoint was not reachable before capture.`,
         );
