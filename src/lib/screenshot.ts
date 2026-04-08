@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { CONFIG } from "../config";
 import { applyConsentHiding } from "./screenshot-consent";
 import { applyMediaBlur } from "./screenshot-blur";
+import { createStatusFallbackBuffer } from "./screenshot-status-fallback";
 import {
   cleanupDnsLaunchConfig,
   createDnsLaunchConfig,
@@ -136,7 +137,7 @@ export const captureScreenshot = async (
             error: message,
           };
         }
-        console.warn(message);
+        console.info(`${message} Continuing capture because enforceProfileMatch=false.`);
       }
 
       if (profileMatches === null) {
@@ -176,7 +177,12 @@ export const captureScreenshot = async (
     const finalUrl = page.url();
 
     if (status !== 200) {
-      return { buffer: null, status, finalUrl };
+      const fallbackBuffer = await createStatusFallbackBuffer(
+        width,
+        height,
+        status,
+      );
+      return { buffer: fallbackBuffer, status, finalUrl };
     }
 
     if (CONFIG.screenshot.blurLargeMedia.enabled) {

@@ -29,10 +29,16 @@ ScreenshotWorkflow.task({
     try {
       const result = await captureScreenshot({ url: domainUrl, width, height });
 
-      if (result.status === 200 && result.buffer) {
+      if (result.buffer) {
         const imagePath = cacheService.save(domainUrl, result.buffer);
-        console.log(`Successfully captured screenshot for ${domainUrl}`);
-        return { status: 200, imagePath };
+        if (result.status === 200) {
+          console.log(`Successfully captured screenshot for ${domainUrl}`);
+        } else {
+          console.log(
+            `Captured fallback screenshot for ${domainUrl} with status ${result.status}`,
+          );
+        }
+        return { status: result.status, imagePath };
       } else {
         console.log(
           `Screenshot failed for ${domainUrl} with status ${result.status}`,

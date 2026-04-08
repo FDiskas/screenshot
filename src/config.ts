@@ -15,8 +15,14 @@ export const CONFIG = {
     desktopViewportHeight: 1080,
     pageZoomPercent: 120,
     emulatedColorScheme: "dark",
-    responseTimeoutMs: 5_000,
-    browserLaunchArgs: ["--no-sandbox", "--disable-setuid-sandbox"] as string[],
+    responseTimeoutMs: 10_000,
+    browserLaunchArgs: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      // Some sites fail headless navigation with ERR_HTTP2_PROTOCOL_ERROR.
+      // Force HTTP/1.1 fallback to improve screenshot reliability.
+      "--disable-http2",
+    ] as string[],
     allowedProtocol: "https://",
     resize: {
       fit: "contain",
@@ -32,7 +38,7 @@ export const CONFIG = {
       minHeightPx: 90,
       minAreaPx: 12_000,
       minIntrinsicAreaPx: 12_000,
-      blurPx: 18,
+      blurPx: 9,
       blurVisibleMediaInViewport: true,
     },
     dns: {
