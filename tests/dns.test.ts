@@ -7,6 +7,13 @@ import {
   resolveViaConfiguredDns,
   verifyConfiguredDnsProfile,
 } from "../src/lib/dns";
+import {
+  emitDnsDiagnosticLog,
+  type DnsDiagnosticLogParams,
+} from "../src/lib/screenshot";
+
+vi.mock("puppeteer", () => ({ default: {} }));
+vi.mock("sharp", () => ({ default: () => ({}) }));
 
 class MockResponse {
   constructor(
@@ -162,5 +169,153 @@ describe("DNS launch config", () => {
     expect(localState.async_dns.enabled).toBe(true);
 
     await cleanupDnsLaunchConfig(result.userDataDir);
+  });
+});
+
+const makeVerification = (
+  overrides: Partial<DnsDiagnosticLogParams["verification"]>,
+): DnsDiagnosticLogParams["verification"] => ({
+  matches: true,
+  reason: "profile-match",
+  profile: "364ec7",
+  expectedProfileId: "364ec7",
+  protocol: "DOH",
+  statusValue: "ok",
+  ...overrides,
+});
+
+const baseParams = (
+  verificationOverrides: Partial<DnsDiagnosticLogParams["verification"]> = {},
+): DnsDiagnosticLogParams => ({
+  hostname: "example.com",
+  dnsEnabled: true,
+  dnsProviderAvailable: true,
+  verification: makeVerification(verificationOverrides),
+  verificationEndpoint: "https://test.nextdns.io",
+  enforceProfileMatch: false,
+});
+
+describe("emitDnsDiagnosticLog", () => {
+  it("calls console.warn when matches is false (doh-inactive)", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    emitDnsDiagnosticLog(
+      baseParams({
+        matches: false,
+        reason: "doh-inactive",
+        statusValue: "unconfigured",
+        protocol: "DNS",
+        profile: null,
+      }),
+    );
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(infoSpy).not.toHaveBeenCalled();
+
+    const [label, entry] = warnSpy.mock.calls[0] as [string, Record<string, unknown>];
+    expect(label).toContain("NextDNS");
+    expect(entry.hostname).toBe("example.com");
+    expect(entry.matches).toBe(false);
+    expect(entry.reason).toBe("doh-inactive");
+    expect(entry.statusValue).toBe("unconfigured");
+    expect(entry.protocol).toBe("DNS");
+  });
+
+  it("calls console.warn when matches is false (profile-mismatch)", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    emitDnsDiagnosticLog(
+      baseParams({
+        matches: false,
+        reason: "profile-mismatch",
+        statusValue: "ok",
+        protocol: "DOH",
+        profile: "other-profile",
+        expectedProfileId: "364ec7",
+      }),
+    );
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const [, entry] = warnSpy.mock.calls[0] as [string, Record<string, unknown>];
+    expect(entry.matches).toBe(false);
+    expect(entry.reason).toBe("profile-mismatch");
+    expect(entry.profile).toBe("other-profile");
+    expect(entry.expectedProfileId).toBe("364ec7");
+  });
+
+  it("calls console.info when matches is null (unreachable)", () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    emitDnsDiagnosticLog(
+      baseParams({
+        matches: null,
+        reason: "unreachable",
+        statusValue: null,
+        protocol: null,
+        profile: null,
+      }),
+    );
+
+    expect(infoSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    const [label, entry] = infoSpy.mock.calls[0] as [string, Record<string, unknown>];
+    expect(label).toContain("NextDNS");
+    expect(entry.hostname).toBe("example.com");
+    expect(entry.matches).toBeNull();
+    expect(entry.reason).toBe("unreachable");
+  });
+
+  it("calls console.info when matches is true (success)", () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    emitDnsDiagnosticLog(baseParams());
+
+    expect(infoSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    const [, entry] = infoSpy.mock.calls[0] as [string, Record<string, unknown>];
+    expect(entry.matches).toBe(true);
+    expect(entry.reason).toBe("profile-match");
+    expect(entry.statusValue).toBe("ok");
+    expect(entry.protocol).toBe("DOH");
+  });
+
+  it("includes all required structured fields in the log entry", () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    emitDnsDiagnosticLog({
+      hostname: "superadblocktest.com",
+      dnsEnabled: true,
+      dnsProviderAvailable: false,
+      verification: makeVerification({
+        matches: true,
+        reason: "profile-match",
+        profile: "364ec7",
+        expectedProfileId: "364ec7",
+        protocol: "DOH",
+        statusValue: "ok",
+      }),
+      verificationEndpoint: "https://test.nextdns.io",
+      enforceProfileMatch: false,
+    });
+
+    const [, entry] = infoSpy.mock.calls[0] as [string, Record<string, unknown>];
+    expect(entry).toMatchObject({
+      hostname: "superadblocktest.com",
+      dnsEnabled: true,
+      dnsProviderAvailable: false,
+      matches: true,
+      reason: "profile-match",
+      statusValue: "ok",
+      protocol: "DOH",
+      profile: "364ec7",
+      expectedProfileId: "364ec7",
+      verificationEndpoint: "https://test.nextdns.io",
+      enforceProfileMatch: false,
+    });
   });
 });
