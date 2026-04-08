@@ -220,6 +220,7 @@ export const cacheService = {
   purgeAll: () => {
     rmSync(CACHE_DIR, { recursive: true, force: true });
     mkdirSync(CACHE_DIR, { recursive: true });
+    writeFileSync(join(CACHE_DIR, ".gitkeep"), "");
   },
 
   getCacheDir: (): string => {
