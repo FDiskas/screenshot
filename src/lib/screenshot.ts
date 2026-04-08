@@ -108,8 +108,6 @@ export const emitDnsDiagnosticLog = (params: DnsDiagnosticLogParams): void => {
   const label = `[DNS] ${CONFIG.screenshot.dns.providerName} verification`;
   if (verification.matches === false) {
     console.warn(label, entry);
-  } else {
-    console.info(label, entry);
   }
 };
 
