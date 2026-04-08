@@ -168,6 +168,9 @@ app.get("/api/raw", async (c) => {
 });
 
 console.log(`Server starting on port ${CONFIG.server.port}...`);
+console.log(
+  `[Storage] cwd=${process.cwd()} cacheDir=${cacheService.getCacheDir()}`,
+);
 
 export default {
   port: CONFIG.server.port,
