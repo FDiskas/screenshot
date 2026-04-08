@@ -10,6 +10,7 @@ import {
   createDnsLaunchConfig,
   resolveViaConfiguredDns,
   verifyConfiguredDnsProfileDetailed,
+  type DnsProfileVerificationResult,
 } from "./dns";
 
 export interface ScreenshotOptions {
@@ -73,6 +74,45 @@ const buildOverlaySvg = (
   `;
 };
 
+export interface DnsDiagnosticLogParams {
+  hostname: string;
+  dnsEnabled: boolean;
+  dnsProviderAvailable: boolean;
+  verification: DnsProfileVerificationResult;
+  verificationEndpoint: string;
+  enforceProfileMatch: boolean;
+}
+
+export const emitDnsDiagnosticLog = (params: DnsDiagnosticLogParams): void => {
+  const {
+    hostname,
+    dnsEnabled,
+    dnsProviderAvailable,
+    verification,
+    verificationEndpoint,
+    enforceProfileMatch,
+  } = params;
+  const entry = {
+    hostname,
+    dnsEnabled,
+    dnsProviderAvailable,
+    matches: verification.matches,
+    reason: verification.reason,
+    statusValue: verification.statusValue,
+    protocol: verification.protocol,
+    profile: verification.profile,
+    expectedProfileId: verification.expectedProfileId,
+    verificationEndpoint,
+    enforceProfileMatch,
+  };
+  const label = `[DNS] ${CONFIG.screenshot.dns.providerName} verification`;
+  if (verification.matches === false) {
+    console.warn(label, entry);
+  } else {
+    console.info(label, entry);
+  }
+};
+
 export const captureScreenshot = async (
   options: ScreenshotOptions,
 ): Promise<ScreenshotResult> => {
@@ -95,10 +135,9 @@ export const captureScreenshot = async (
     }
 
     let dnsProviderAvailable = false;
+    const hostname = new URL(url).hostname;
     try {
-      dnsProviderAvailable = await resolveViaConfiguredDns(
-        new URL(url).hostname,
-      );
+      dnsProviderAvailable = await resolveViaConfiguredDns(hostname);
     } catch {
       dnsProviderAvailable = false;
     }
@@ -114,12 +153,6 @@ export const captureScreenshot = async (
       ...(userDataDir ? { userDataDir } : {}),
     });
 
-    if (CONFIG.screenshot.dns.enabled && !dnsProviderAvailable) {
-      console.info(
-        `${CONFIG.screenshot.dns.providerName} DNS preflight probe could not verify ${url}; continuing with secure browser DoH configuration.`,
-      );
-    }
-
     const page = await browser.newPage();
     await page.setViewport({
       width: CONFIG.screenshot.desktopViewportWidth,
@@ -129,28 +162,28 @@ export const captureScreenshot = async (
     if (CONFIG.screenshot.dns.enabled) {
       const profileVerification =
         await verifyConfiguredDnsProfileDetailed(page);
-      if (profileVerification.matches === false) {
+      if (
+        profileVerification.matches === false &&
+        CONFIG.screenshot.dns.enforceProfileMatch
+      ) {
         const message =
           profileVerification.reason === "doh-inactive"
             ? `${CONFIG.screenshot.dns.providerName} DoH verification failed for ${url}; expected status=ok and protocol=DOH but got status=${profileVerification.statusValue ?? "unknown"}, protocol=${profileVerification.protocol ?? "unknown"}.`
             : `${CONFIG.screenshot.dns.providerName} profile mismatch for ${url}; expected ${profileVerification.expectedProfileId ?? "(not set)"}, got ${profileVerification.profile ?? "unknown"}.`;
-        if (CONFIG.screenshot.dns.enforceProfileMatch) {
-          return {
-            buffer: null,
-            status: 503,
-            error: message,
-          };
-        }
-        console.info(
-          `${message} Continuing capture because enforceProfileMatch=false.`,
-        );
+        return {
+          buffer: null,
+          status: 503,
+          error: message,
+        };
       }
-
-      if (profileVerification.matches === null) {
-        console.info(
-          `${CONFIG.screenshot.dns.providerName} profile verification endpoint was not reachable before capture.`,
-        );
-      }
+      emitDnsDiagnosticLog({
+        hostname,
+        dnsEnabled: CONFIG.screenshot.dns.enabled,
+        dnsProviderAvailable,
+        verification: profileVerification,
+        verificationEndpoint: CONFIG.screenshot.dns.verificationEndpoint,
+        enforceProfileMatch: CONFIG.screenshot.dns.enforceProfileMatch,
+      });
     }
 
     await page.emulateMediaFeatures([
