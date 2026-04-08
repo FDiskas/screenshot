@@ -65,12 +65,16 @@ const handleScreenshotRequest = async (
   c: any,
   cacheMode: "image" | "redirect",
 ) => {
-  const url = c.req.query("url");
+  let url = c.req.query("url");
   const width = parseInt(c.req.query("width") || String(CONFIG.screenshot.defaultWidth));
   const height = parseInt(c.req.query("height") || String(CONFIG.screenshot.defaultHeight));
 
   if (!url) {
     return c.text("URL is required", 400);
+  }
+
+  if (url.startsWith("http://")) {
+    url = url.replace("http://", "https://");
   }
 
   // 1. Basic validation

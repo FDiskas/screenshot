@@ -154,6 +154,21 @@ export const captureScreenshot = async (
     });
 
     const page = await browser.newPage();
+    
+    // Explicitly prevent file downloads
+    const client = await page.createCDPSession();
+    await client.send("Browser.setDownloadBehavior", {
+      behavior: "deny",
+      eventsEnabled: false,
+    }).catch(() => {
+      // Fallback for older versions or different contexts
+      return client.send("Page.setDownloadBehavior", {
+        behavior: "deny",
+      });
+    }).catch(() => {
+      console.warn("Could not set download behavior");
+    });
+
     await page.setViewport({
       width: CONFIG.screenshot.desktopViewportWidth,
       height: CONFIG.screenshot.desktopViewportHeight,
