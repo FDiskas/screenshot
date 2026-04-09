@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"bun run css:watch\" \"npx bun --hot --smol src/server.tsx\"",
-    "start": "bun run css:build && npx bun --smol src/server.tsx",
+    "dev": "concurrently \"bun run css:watch\" \"npx bun --hot src/server.tsx\"",
+    "start": "bun run css:build && npx bun src/server.tsx",
     "css:build": "tailwindcss -i ./src/index.css -o ./public/index.css --minify",
     "css:watch": "tailwindcss -i ./src/index.css -o ./public/index.css --watch",
     "test": "vitest",
