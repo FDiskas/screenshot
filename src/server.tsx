@@ -11,6 +11,21 @@ import { getStatusPlaceholder } from "./lib/placeholder";
 import { cacheService } from "./lib/cache";
 import { hatchet } from "./lib/hatchet";
 import { CONFIG } from "./config";
+import { ScreenshotWorkflow } from "./lib/workflows/screenshot.workflow";
+import { CleanupWorkflow } from "./lib/workflows/cleanup.workflow";
+import { PurgeWorkflow } from "./lib/workflows/purge.workflow";
+
+async function startWorker() {
+  const worker = await hatchet.worker(CONFIG.worker.name, {
+    slots: CONFIG.worker.slots,
+  });
+  await worker.registerWorkflow(ScreenshotWorkflow);
+  await worker.registerWorkflow(CleanupWorkflow);
+  await worker.registerWorkflow(PurgeWorkflow);
+  await worker.start();
+  console.log("Hatchet worker started within server process and listening for screenshot events...");
+}
+startWorker().catch(console.error);
 
 const app = new Hono();
 const recentTriggerByDomain = new Map<string, number>();
