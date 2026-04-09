@@ -1,4 +1,6 @@
 import sharp from "sharp";
+sharp.cache(false);
+
 import { CONFIG } from "../config";
 
 export const generatePlaceholder = async (

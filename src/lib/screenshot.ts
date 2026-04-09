@@ -1,6 +1,8 @@
 import puppeteer from "puppeteer";
 import type { Page } from "puppeteer";
 import sharp from "sharp";
+sharp.cache(false);
+
 import { CONFIG } from "../config";
 import { applyConsentHiding } from "./screenshot-consent";
 import { applyMediaBlur } from "./screenshot-blur";

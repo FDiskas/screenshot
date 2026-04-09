@@ -1,4 +1,5 @@
 import sharp from "sharp";
+sharp.cache(false);
 
 const escapeXml = (value: string): string => {
   return value
