@@ -2,6 +2,7 @@ import puppeteer from "puppeteer";
 import type { Page } from "puppeteer";
 import sharp from "sharp";
 sharp.cache(false);
+sharp.concurrency(1);
 
 import { CONFIG } from "../config";
 import { applyConsentHiding } from "./screenshot-consent";

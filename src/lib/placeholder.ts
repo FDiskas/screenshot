@@ -1,5 +1,6 @@
 import sharp from "sharp";
 sharp.cache(false);
+sharp.concurrency(1);
 
 import { CONFIG } from "../config";
 

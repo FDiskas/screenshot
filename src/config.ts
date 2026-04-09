@@ -19,6 +19,8 @@ export const CONFIG = {
     browserLaunchArgs: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
       // Some sites fail headless navigation with ERR_HTTP2_PROTOCOL_ERROR.
       // Force HTTP/1.1 fallback to improve screenshot reliability.
       "--disable-http2",
