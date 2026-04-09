@@ -5,6 +5,13 @@ import { PurgeWorkflow } from "./lib/workflows/purge.workflow";
 import { CONFIG } from "./config";
 import { cacheService } from "./lib/cache";
 
+// Periodic garbage collection to keep Bun worker idle memory low
+setInterval(() => {
+  if (typeof Bun !== "undefined" && Bun.gc) {
+    Bun.gc(true);
+  }
+}, 60_000);
+
 async function main() {
   const worker = await hatchet.worker(CONFIG.worker.name, {
     slots: CONFIG.worker.slots,

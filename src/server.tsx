@@ -22,6 +22,29 @@ const screenshotMaxAgeSeconds = Math.max(
 const screenshotCacheControl = `public, max-age=${screenshotMaxAgeSeconds}, immutable`;
 const pendingTriggerMaxAgeMs = CONFIG.server.processingRetryMs * 4;
 
+// Periodic memory cleanup
+setInterval(() => {
+  const now = Date.now();
+  const expireMs = 10 * 60 * 1000; // 10 minutes
+
+  for (const [domain, timestamp] of recentTriggerByDomain.entries()) {
+    if (now - timestamp > expireMs) {
+      recentTriggerByDomain.delete(domain);
+    }
+  }
+
+  for (const [domain, timestamp] of pendingTriggerByDomain.entries()) {
+    if (now - timestamp > expireMs) {
+      pendingTriggerByDomain.delete(domain);
+    }
+  }
+
+  // Aggressive garbage collection to keep Bun memory usage low on idle
+  if (typeof Bun !== "undefined" && Bun.gc) {
+    Bun.gc(true);
+  }
+}, 60_000);
+
 // Static files
 app.use("/index.css", serveStatic({ path: "./public/index.css" }));
 app.use("/favicon.svg", serveStatic({ path: "./public/favicon.svg" }));
