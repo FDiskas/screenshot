@@ -8,7 +8,7 @@ import { DocsPage } from "./components/DocsPage";
 import { dbService } from "./db";
 import { checkSafety } from "./lib/safety";
 import { getStatusPlaceholder } from "./lib/placeholder";
-import { cacheService } from "./lib/cache";
+import { parseScreenshotParams, isValidScreenshotUrl, resolveScreenshotDomain } from "./lib/request";
 import { hatchet } from "./lib/hatchet";
 import { CONFIG } from "./config";
 import { ScreenshotWorkflow } from "./lib/workflows/screenshot.workflow";
@@ -103,39 +103,37 @@ const handleScreenshotRequest = async (
   c: any,
   cacheMode: "image" | "redirect",
 ) => {
-  let url = c.req.query("url");
-  const width = parseInt(c.req.query("width") || String(CONFIG.screenshot.defaultWidth));
-  const height = parseInt(c.req.query("height") || String(CONFIG.screenshot.defaultHeight));
+  const params = parseScreenshotParams(
+    c.req.query("url"),
+    c.req.query("width"),
+    c.req.query("height"),
+  );
 
-  if (!url) {
+  if (!params) {
     return c.text("URL is required", 400);
   }
 
-  if (url.startsWith("http://")) {
-    url = url.replace("http://", "https://");
-  }
+  const { url, width, height } = params;
 
   // 1. Basic validation
-  if (!url.startsWith("https://")) {
+  if (!isValidScreenshotUrl(url)) {
     const errorBuffer = await getStatusPlaceholder(400, width, height);
     return c.body(new Uint8Array(errorBuffer), 200, {
       "Content-Type": "image/png",
-      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Cache-Control": screenshotCacheControl,
     });
   }
 
-  let domain: string;
-  let domainUrl: string;
-  try {
-    domain = cacheService.getDomain(url);
-    domainUrl = cacheService.getDomainUrl(url);
-  } catch {
+  const resolved = resolveScreenshotDomain(url);
+  if (!resolved) {
     const errorBuffer = await getStatusPlaceholder(400, width, height);
     return c.body(new Uint8Array(errorBuffer), 200, {
       "Content-Type": "image/png",
-      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Cache-Control": screenshotCacheControl,
     });
   }
+
+  const { domain, domainUrl } = resolved;
 
   // 2. Check Cache
   const existing = dbService.getByUrl(url);
@@ -166,7 +164,7 @@ const handleScreenshotRequest = async (
     const unsafePlaceholder = await getStatusPlaceholder(403, width, height);
     return c.body(new Uint8Array(unsafePlaceholder), 200, {
       "Content-Type": "image/png",
-      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Cache-Control": screenshotCacheControl,
     });
   }
 
@@ -209,10 +207,65 @@ app.get("/api/raw", async (c) => {
   return handleScreenshotRequest(c, "redirect");
 });
 
+app.get("/api/reload", async (c) => {
+  const params = parseScreenshotParams(
+    c.req.query("url"),
+    c.req.query("width"),
+    c.req.query("height"),
+  );
+
+  if (!params) {
+    return c.json({ error: "URL is required" }, 400);
+  }
+
+  const { url, width, height } = params;
+
+  if (!isValidScreenshotUrl(url)) {
+    return c.json({ error: "Only HTTPS URLs are supported" }, 400);
+  }
+
+  const resolved = resolveScreenshotDomain(url);
+  if (!resolved) {
+    return c.json({ error: "Invalid URL" }, 400);
+  }
+
+  const { domain, domainUrl } = resolved;
+
+  const existing = dbService.getByUrl(url);
+  if (!existing) {
+    return c.json({ error: "No cached image found for this URL" }, 404);
+  }
+
+  const cachedAge = Date.now() - new Date(existing.created_at).getTime();
+  if (cachedAge < CONFIG.server.minReloadAgeMs) {
+    const remainingDays = Math.ceil((CONFIG.server.minReloadAgeMs - cachedAge) / (24 * 60 * 60 * 1000));
+    return c.json({ error: `Image is too recent to reload. Try again in ${remainingDays} day(s)` }, 429);
+  }
+
+  const isSafe = await checkSafety(domainUrl);
+  if (!isSafe) {
+    return c.json({ error: "URL is not allowed" }, 403);
+  }
+
+  recentTriggerByDomain.set(domain, Date.now());
+  pendingTriggerByDomain.set(domain, Date.now());
+
+  try {
+    await hatchet.events.push(CONFIG.server.screenshotEventName, {
+      url: domainUrl,
+      width,
+      height,
+    });
+  } catch (err) {
+    pendingTriggerByDomain.delete(domain);
+    console.error("Hatchet trigger error:", err);
+    return c.json({ error: "Failed to enqueue regeneration task" }, 500);
+  }
+
+  return c.json({ status: "queued", url: domainUrl, width, height });
+});
+
 console.log(`Server starting on port ${CONFIG.server.port}...`);
-console.log(
-  `[Storage] cwd=${process.cwd()} cacheDir=${cacheService.getCacheDir()}`,
-);
 
 export default {
   port: CONFIG.server.port,

@@ -1,5 +1,6 @@
 import { hatchet } from "../hatchet";
 import { captureScreenshot } from "../screenshot";
+import { createStatusFallbackBuffer } from "../screenshot-status-fallback";
 import { cacheService } from "../cache";
 import { CONFIG } from "../../config";
 
@@ -40,10 +41,16 @@ ScreenshotWorkflow.task({
         }
         return { status: result.status, imagePath };
       } else {
-        console.log(
-          `Screenshot failed for ${domainUrl} with status ${result.status}`,
+        const fallbackBuffer = await createStatusFallbackBuffer(
+          width,
+          height,
+          result.status,
         );
-        return { status: result.status };
+        const imagePath = cacheService.save(domainUrl, fallbackBuffer);
+        console.log(
+          `Screenshot failed for ${domainUrl} with status ${result.status}, saved fallback placeholder`,
+        );
+        return { status: result.status, imagePath };
       }
     } catch (error: any) {
       console.error(`Workflow error for ${domainUrl}:`, error);
