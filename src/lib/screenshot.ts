@@ -183,6 +183,10 @@ export const captureScreenshot = async (
       height: CONFIG.screenshot.desktopViewportHeight,
     });
 
+    await page.setUserAgent({
+      userAgent: CONFIG.screenshot.browserUserAgent,
+    });
+
     if (
       CONFIG.screenshot.dns.enabled &&
       CONFIG.screenshot.dns.checkDnsStatus

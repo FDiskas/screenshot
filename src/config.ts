@@ -18,6 +18,12 @@ export const CONFIG = {
     emulatedColorScheme: "dark",
     responseTimeoutMs: 15_000,
     pageSettleMs: 1_500,
+    /**
+     * Headless Chromium’s default User-Agent string is truncated (no Chrome/… Safari/…),
+     * which many WAFs treat as a bot and answer with HTTP 403.
+     */
+    browserUserAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     browserLaunchArgs: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
