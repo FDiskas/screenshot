@@ -48,6 +48,34 @@ const applyPageZoom = async (page: Page): Promise<void> => {
   }, zoomFactor);
 };
 
+/**
+ * Reddit and other properties often return HTTP 403 when they see automation-only clients:
+ * missing UA-CH vs User-Agent, navigator.webdriver, or the AutomationControlled blink flag.
+ */
+const preparePageForAutomationCapture = async (page: Page): Promise<void> => {
+  await page.evaluateOnNewDocument(() => {
+    try {
+      Object.defineProperty(navigator, "webdriver", {
+        get: () => undefined,
+        configurable: true,
+      });
+    } catch {
+      /* ignore */
+    }
+  });
+
+  await page.setExtraHTTPHeaders({
+    "Accept-Language": "en-US,en;q=0.9",
+  });
+
+  const hints = CONFIG.screenshot.browserUserAgentClientHints;
+  await page.setUserAgent({
+    userAgent: CONFIG.screenshot.browserUserAgent,
+    // CONFIG is `as const`; Puppeteer expects mutable UserAgentMetadata.
+    userAgentMetadata: JSON.parse(JSON.stringify(hints)),
+  });
+};
+
 const escapeXml = (value: string): string => {
   return value
     .replace(/&/g, "&amp;")
@@ -219,9 +247,7 @@ export const captureScreenshot = async (
       height: CONFIG.screenshot.desktopViewportHeight,
     });
 
-    await page.setUserAgent({
-      userAgent: CONFIG.screenshot.browserUserAgent,
-    });
+    await preparePageForAutomationCapture(page);
 
     if (
       CONFIG.screenshot.dns.enabled &&

@@ -30,11 +30,37 @@ export const CONFIG = {
      */
     browserUserAgent:
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    /**
+     * Must align with browserUserAgent (Chrome major + Windows) so Sec-CH-UA / UA-CH match.
+     * Helps sites (e.g. Reddit) that reject mismatched or automation-only clients with HTTP 403.
+     */
+    browserUserAgentClientHints: {
+      brands: [
+        { brand: "Google Chrome", version: "131" },
+        { brand: "Chromium", version: "131" },
+        { brand: "Not_A Brand", version: "24" },
+      ],
+      fullVersion: "131.0.0.0",
+      fullVersionList: [
+        { brand: "Google Chrome", version: "131.0.0.0" },
+        { brand: "Chromium", version: "131.0.0.0" },
+        { brand: "Not_A Brand", version: "24.0.0.0" },
+      ],
+      platform: "Windows",
+      platformVersion: "15.0.0",
+      architecture: "x86",
+      bitness: "64",
+      wow64: false,
+      model: "",
+      mobile: false,
+    },
     browserLaunchArgs: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
+      // Reduces obvious automation signals (helps Reddit, Cloudflare, etc.).
+      "--disable-blink-features=AutomationControlled",
       // Some sites fail headless navigation with ERR_HTTP2_PROTOCOL_ERROR.
       // Force HTTP/1.1 fallback to improve screenshot reliability.
       "--disable-http2",
