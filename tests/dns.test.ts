@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { CONFIG } from "../src/config";
 import {
   cleanupDnsLaunchConfig,
   createDnsLaunchConfig,
@@ -89,6 +90,23 @@ describe("DNS preflight", () => {
 
     const resolved = await resolveViaConfiguredDns("example.com");
     expect(resolved).toBe(false);
+  });
+
+  it("skips JSON preflight when checkDnsStatus is false", async () => {
+    const dns = CONFIG.screenshot.dns as typeof CONFIG.screenshot.dns & {
+      checkDnsStatus: boolean;
+    };
+    const prev = dns.checkDnsStatus;
+    dns.checkDnsStatus = false;
+    const fetchSpy = vi.fn();
+    global.fetch = fetchSpy as unknown as typeof fetch;
+    try {
+      const resolved = await resolveViaConfiguredDns("example.com");
+      expect(resolved).toBe(true);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      dns.checkDnsStatus = prev;
+    }
   });
 });
 
@@ -196,6 +214,20 @@ const baseParams = (
 });
 
 describe("emitDnsDiagnosticLog", () => {
+  const dnsMutable = CONFIG.screenshot.dns as typeof CONFIG.screenshot.dns & {
+    verboseLogging: boolean;
+  };
+  let verbosePrev: boolean;
+
+  beforeEach(() => {
+    verbosePrev = dnsMutable.verboseLogging;
+    dnsMutable.verboseLogging = true;
+  });
+
+  afterEach(() => {
+    dnsMutable.verboseLogging = verbosePrev;
+  });
+
   it("calls console.warn when matches is false (doh-inactive)", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});

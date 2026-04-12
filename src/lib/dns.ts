@@ -40,6 +40,9 @@ export const resolveViaConfiguredDns = async (
   if (!CONFIG.screenshot.dns.enabled) {
     return false;
   }
+  if (!CONFIG.screenshot.dns.checkDnsStatus) {
+    return true;
+  }
 
   try {
     // Some hosts may be IPv6-only, so probe both A and AAAA.

@@ -47,6 +47,8 @@ export const CONFIG = {
     },
     dns: {
       enabled: true,
+      /** When false, Chromium still uses configured DoH but skips JSON preflight and test.nextdns.io verification. */
+      checkDnsStatus: true,
       verboseLogging: false,
       providerName: "NextDNS",
       preflightJsonEndpoint: "https://364ec7.dns.nextdns.io",

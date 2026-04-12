@@ -183,7 +183,10 @@ export const captureScreenshot = async (
       height: CONFIG.screenshot.desktopViewportHeight,
     });
 
-    if (CONFIG.screenshot.dns.enabled) {
+    if (
+      CONFIG.screenshot.dns.enabled &&
+      CONFIG.screenshot.dns.checkDnsStatus
+    ) {
       const profileVerification =
         await verifyConfiguredDnsProfileDetailed(page);
       if (
