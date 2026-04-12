@@ -37,19 +37,19 @@ const screenshotMaxAgeSeconds = Math.max(
 const screenshotCacheControl = `public, max-age=${screenshotMaxAgeSeconds}, immutable`;
 const pendingTriggerMaxAgeMs = CONFIG.server.processingRetryMs * 4;
 
-// Periodic memory cleanup
+// Periodic memory cleanup — runs every pendingTriggerMaxAgeMs so stale map
+// entries are evicted promptly rather than lingering for a full 10 minutes.
 setInterval(() => {
   const now = Date.now();
-  const expireMs = 10 * 60 * 1000; // 10 minutes
 
   for (const [domain, timestamp] of recentTriggerByDomain.entries()) {
-    if (now - timestamp > expireMs) {
+    if (now - timestamp > pendingTriggerMaxAgeMs) {
       recentTriggerByDomain.delete(domain);
     }
   }
 
   for (const [domain, timestamp] of pendingTriggerByDomain.entries()) {
-    if (now - timestamp > expireMs) {
+    if (now - timestamp > pendingTriggerMaxAgeMs) {
       pendingTriggerByDomain.delete(domain);
     }
   }
@@ -58,7 +58,7 @@ setInterval(() => {
   if (typeof Bun !== "undefined" && Bun.gc) {
     Bun.gc(true);
   }
-}, 60_000);
+}, pendingTriggerMaxAgeMs);
 
 // Static files
 app.use("/index.css", serveStatic({ path: "./public/index.css" }));

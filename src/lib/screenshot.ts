@@ -1,8 +1,7 @@
+import "./sharp-config";
 import puppeteer from "puppeteer";
 import type { Page } from "puppeteer";
 import sharp from "sharp";
-sharp.cache(false);
-sharp.concurrency(1);
 
 import { CONFIG } from "../config";
 import { applyConsentHiding } from "./screenshot-consent";
@@ -111,6 +110,9 @@ export const emitDnsDiagnosticLog = (params: DnsDiagnosticLogParams): void => {
   const label = `[DNS] ${CONFIG.screenshot.dns.providerName} verification`;
   if (verification.matches === false) {
     console.warn(label, entry);
+  } else {
+    // matches === true (success) or matches === null (unreachable/error)
+    console.info(label, entry);
   }
 };
 
@@ -155,20 +157,23 @@ export const captureScreenshot = async (
     });
 
     const page = await browser.newPage();
-    
-    // Explicitly prevent file downloads
+
+    // Explicitly prevent file downloads.
+    // CDPSession must be detached after use — it holds native transport handles
+    // that Puppeteer does not automatically release when the page closes.
     const client = await page.createCDPSession();
-    await client.send("Browser.setDownloadBehavior", {
-      behavior: "deny",
-      eventsEnabled: false,
-    }).catch(() => {
-      // Fallback for older versions or different contexts
-      return client.send("Page.setDownloadBehavior", {
+    try {
+      await client.send("Browser.setDownloadBehavior", {
         behavior: "deny",
+        eventsEnabled: false,
+      }).catch(() =>
+        client.send("Page.setDownloadBehavior", { behavior: "deny" })
+      ).catch(() => {
+        console.warn("Could not set download behavior");
       });
-    }).catch(() => {
-      console.warn("Could not set download behavior");
-    });
+    } finally {
+      await client.detach().catch(() => {});
+    }
 
     await page.setViewport({
       width: CONFIG.screenshot.desktopViewportWidth,
@@ -249,16 +254,6 @@ export const captureScreenshot = async (
     // Take screenshot of the desktop viewport
     const rawBuffer = (await page.screenshot({ type: "png" })) as Buffer;
 
-    // Resize to the desired dimensions without cropping by default.
-    const resizedBuffer = await sharp(rawBuffer)
-      .resize(width, height, {
-        fit: CONFIG.screenshot.resize.fit,
-        position: CONFIG.screenshot.resize.position,
-        background: CONFIG.screenshot.resize.background,
-        withoutEnlargement: CONFIG.screenshot.resize.withoutEnlargement,
-      })
-      .toBuffer();
-
     const overlayHost = (() => {
       try {
         return new URL(finalUrl).hostname;
@@ -272,7 +267,17 @@ export const captureScreenshot = async (
     })();
 
     const overlaySvg = buildOverlaySvg(width, height, overlayHost);
-    const finalBuffer = await sharp(resizedBuffer)
+
+    // Chain resize + composite in a single Sharp pipeline.
+    // This avoids holding rawBuffer + resizedBuffer + finalBuffer in memory
+    // simultaneously (~1–2 MB peak saving per job).
+    const finalBuffer = await sharp(rawBuffer)
+      .resize(width, height, {
+        fit: CONFIG.screenshot.resize.fit,
+        position: CONFIG.screenshot.resize.position,
+        background: CONFIG.screenshot.resize.background,
+        withoutEnlargement: CONFIG.screenshot.resize.withoutEnlargement,
+      })
       .composite([{ input: Buffer.from(overlaySvg), top: 0, left: 0 }])
       .png()
       .toBuffer();

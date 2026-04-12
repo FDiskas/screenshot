@@ -13,12 +13,12 @@ export const checkSafety = async (url: string): Promise<boolean> => {
     );
 
     if (!response.ok) {
+      // Cancel the body so the underlying TCP socket is released immediately
+      // rather than waiting for GC to finalize the Response object.
+      await response.body?.cancel().catch(() => {});
       console.warn(
         `Safety check failed for ${url} with status ${response.status}`,
       );
-      // Fallback to safe if API is down? Or unsafe?
-      // User said "status false means safe to use", if API fails we should probably be cautious.
-      // But for a demo, we might want to continue. Let's assume it's unsafe if API fails.
       return false;
     }
 
