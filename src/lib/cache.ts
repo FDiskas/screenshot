@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import {
+  existsSync,
   mkdirSync,
   readdirSync,
   rmSync,
@@ -218,7 +219,13 @@ export const cacheService = {
   },
 
   purgeAll: () => {
-    rmSync(CACHE_DIR, { recursive: true, force: true });
+    // Remove only contents, not CACHE_DIR itself. Deleting the directory root
+    // fails with EBUSY when it is a Docker/bind mount (cannot unlink mount point).
+    if (existsSync(CACHE_DIR)) {
+      for (const name of readdirSync(CACHE_DIR)) {
+        rmSync(join(CACHE_DIR, name), { recursive: true, force: true });
+      }
+    }
     mkdirSync(CACHE_DIR, { recursive: true });
     writeFileSync(join(CACHE_DIR, ".gitkeep"), "");
   },
