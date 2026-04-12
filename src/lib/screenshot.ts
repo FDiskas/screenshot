@@ -138,7 +138,7 @@ const waitForUrlToStabilize = async (
       stableSince = Date.now();
       try {
         await page.waitForNavigation({
-          waitUntil: "domcontentloaded",
+          waitUntil: "load",
           timeout: Math.max(500, deadline - Date.now()),
         });
       } catch {
