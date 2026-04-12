@@ -28,29 +28,22 @@ async function startWorker() {
 startWorker().catch(console.error);
 
 const app = new Hono();
+/** Last time we enqueued a Hatchet screenshot event per domain (debounce / duplicate suppression). */
 const recentTriggerByDomain = new Map<string, number>();
-const pendingTriggerByDomain = new Map<string, number>();
 const screenshotMaxAgeSeconds = Math.max(
   0,
   Math.floor(CONFIG.cache.maxAgeMs / 1000),
 );
 const screenshotCacheControl = `public, max-age=${screenshotMaxAgeSeconds}, immutable`;
-const pendingTriggerMaxAgeMs = CONFIG.server.processingRetryMs * 4;
+const triggerMapMaxAgeMs = CONFIG.server.processingRetryMs * 4;
 
-// Periodic memory cleanup — runs every pendingTriggerMaxAgeMs so stale map
-// entries are evicted promptly rather than lingering for a full 10 minutes.
+// Periodic memory cleanup — evict stale trigger timestamps so the map does not grow forever.
 setInterval(() => {
   const now = Date.now();
 
   for (const [domain, timestamp] of recentTriggerByDomain.entries()) {
-    if (now - timestamp > pendingTriggerMaxAgeMs) {
+    if (now - timestamp > triggerMapMaxAgeMs) {
       recentTriggerByDomain.delete(domain);
-    }
-  }
-
-  for (const [domain, timestamp] of pendingTriggerByDomain.entries()) {
-    if (now - timestamp > pendingTriggerMaxAgeMs) {
-      pendingTriggerByDomain.delete(domain);
     }
   }
 
@@ -58,7 +51,7 @@ setInterval(() => {
   if (typeof Bun !== "undefined" && Bun.gc) {
     Bun.gc(true);
   }
-}, pendingTriggerMaxAgeMs);
+}, triggerMapMaxAgeMs);
 
 // Static files
 app.use("/index.css", serveStatic({ path: "./public/index.css" }));
@@ -139,7 +132,7 @@ const handleScreenshotRequest = async (
   const existing = dbService.getByUrl(url);
   if (existing) {
     if (existing.status === 200 && existing.image_path) {
-      pendingTriggerByDomain.delete(domain);
+      recentTriggerByDomain.delete(domain);
       if (cacheMode === "redirect") {
         const response = c.redirect(existing.image_path, 302);
         response.headers.set("Cache-Control", screenshotCacheControl);
@@ -170,25 +163,29 @@ const handleScreenshotRequest = async (
 
   // 4. Async process and return placeholder
   const now = Date.now();
-  const pendingSince = pendingTriggerByDomain.get(domain) || 0;
-  const hasPendingTrigger =
-    pendingSince > 0 && now - pendingSince < pendingTriggerMaxAgeMs;
   const lastTrigger = recentTriggerByDomain.get(domain) || 0;
+  // Debounce only: avoid enqueueing duplicate events while a previous trigger is still "fresh".
+  // (Previously a second "pending" window blocked new events for 4× this interval — users saw 202
+  // placeholders but no new Hatchet task for up to two minutes.)
   const shouldTrigger =
-    !hasPendingTrigger &&
+    lastTrigger === 0 ||
     now - lastTrigger > CONFIG.server.processingRetryMs;
 
   if (shouldTrigger) {
     recentTriggerByDomain.set(domain, now);
-    pendingTriggerByDomain.set(domain, now);
     hatchet.events.push(CONFIG.server.screenshotEventName, {
       url: domainUrl,
       width,
       height
     }).catch(err => {
-      pendingTriggerByDomain.delete(domain);
+      recentTriggerByDomain.delete(domain);
       console.error("Hatchet trigger error:", err);
     });
+  } else {
+    const waitMs = CONFIG.server.processingRetryMs - (now - lastTrigger);
+    console.info(
+      `[screenshot] Skipping duplicate Hatchet event for ${domain}; next eligible in ~${Math.max(0, Math.ceil(waitMs / 1000))}s`,
+    );
   }
 
   const processingPlaceholder = await getStatusPlaceholder(202, width, height);
@@ -248,7 +245,6 @@ app.get("/api/reload", async (c) => {
   }
 
   recentTriggerByDomain.set(domain, Date.now());
-  pendingTriggerByDomain.set(domain, Date.now());
 
   try {
     await hatchet.events.push(CONFIG.server.screenshotEventName, {
@@ -257,7 +253,7 @@ app.get("/api/reload", async (c) => {
       height,
     });
   } catch (err) {
-    pendingTriggerByDomain.delete(domain);
+    recentTriggerByDomain.delete(domain);
     console.error("Hatchet trigger error:", err);
     return c.json({ error: "Failed to enqueue regeneration task" }, 500);
   }

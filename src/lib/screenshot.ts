@@ -4,7 +4,7 @@ import type { Page } from "puppeteer";
 import sharp from "sharp";
 
 import { CONFIG } from "../config";
-import { applyConsentHiding } from "./screenshot-consent";
+import { applyConsentHiding, tryDismissConsentDialogs } from "./screenshot-consent";
 import { applyMediaBlur } from "./screenshot-blur";
 import { createStatusFallbackBuffer } from "./screenshot-status-fallback";
 import {
@@ -84,6 +84,42 @@ export interface DnsDiagnosticLogParams {
   verificationEndpoint: string;
   enforceProfileMatch: boolean;
 }
+
+/**
+ * Puppeteer follows HTTP redirects automatically. We still wait for `load` (not only
+ * `domcontentloaded`) and then until the URL stops changing so late `location` /
+ * SPA navigations finish before the screenshot.
+ */
+const waitForUrlToStabilize = async (
+  page: Page,
+  maxMs: number,
+  stableMs: number,
+): Promise<void> => {
+  const deadline = Date.now() + maxMs;
+  let lastUrl = page.url();
+  let stableSince = Date.now();
+
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 100));
+    const current = page.url();
+    if (current !== lastUrl) {
+      lastUrl = current;
+      stableSince = Date.now();
+      try {
+        await page.waitForNavigation({
+          waitUntil: "load",
+          timeout: Math.max(500, deadline - Date.now()),
+        });
+      } catch {
+        // Navigation may already have completed.
+      }
+      lastUrl = page.url();
+      stableSince = Date.now();
+    } else if (Date.now() - stableSince >= stableMs) {
+      return;
+    }
+  }
+};
 
 export const emitDnsDiagnosticLog = (params: DnsDiagnosticLogParams): void => {
   if (!CONFIG.screenshot.dns.verboseLogging) {
@@ -228,20 +264,30 @@ export const captureScreenshot = async (
     page.setDefaultTimeout(CONFIG.screenshot.responseTimeoutMs);
 
     const response = await page.goto(url, {
-      // We only require initial response and basic DOM availability within 5s.
-      waitUntil: "domcontentloaded",
+      waitUntil: "load",
       timeout: CONFIG.screenshot.responseTimeoutMs,
     });
+
+    if (!response) {
+      return { buffer: null, status: 500, error: "Failed to load page" };
+    }
+
+    const settleMax = Math.min(
+      CONFIG.screenshot.redirectSettleMaxMs,
+      CONFIG.screenshot.responseTimeoutMs,
+    );
+    await waitForUrlToStabilize(
+      page,
+      settleMax,
+      CONFIG.screenshot.redirectSettleStableMs,
+    );
 
     await new Promise((resolve) =>
       setTimeout(resolve, CONFIG.screenshot.pageSettleMs),
     );
 
-    await applyConsentHiding(page, url);
-
-    if (!response) {
-      return { buffer: null, status: 500, error: "Failed to load page" };
-    }
+    await tryDismissConsentDialogs(page, CONFIG.screenshot.consentClickBudgetMs);
+    await applyConsentHiding(page, page.url());
 
     const status = response.status();
     const finalUrl = page.url();

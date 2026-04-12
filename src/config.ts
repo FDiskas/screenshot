@@ -18,6 +18,12 @@ export const CONFIG = {
     emulatedColorScheme: "dark",
     responseTimeoutMs: 15_000,
     pageSettleMs: 1_500,
+    /** Time budget to find and click common CMP “accept” buttons before CSS consent hiding. */
+    consentClickBudgetMs: 8_000,
+    /** Max time to wait for the URL to stop changing after `goto` (client-side redirects). */
+    redirectSettleMaxMs: 8_000,
+    /** How long the URL must stay unchanged before we consider navigation settled. */
+    redirectSettleStableMs: 450,
     /**
      * Headless Chromium’s default User-Agent string is truncated (no Chrome/… Safari/…),
      * which many WAFs treat as a bot and answer with HTTP 403.
