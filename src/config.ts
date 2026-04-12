@@ -46,6 +46,7 @@ export const CONFIG = {
     },
     dns: {
       enabled: true,
+      verboseLogging: false,
       providerName: "NextDNS",
       preflightJsonEndpoint: "https://364ec7.dns.nextdns.io",
       browserDohTemplate: "https://364ec7.dns.nextdns.io/dns-query{?dns}",

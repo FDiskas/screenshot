@@ -86,6 +86,9 @@ export interface DnsDiagnosticLogParams {
 }
 
 export const emitDnsDiagnosticLog = (params: DnsDiagnosticLogParams): void => {
+  if (!CONFIG.screenshot.dns.verboseLogging) {
+    return;
+  }
   const {
     hostname,
     dnsEnabled,
