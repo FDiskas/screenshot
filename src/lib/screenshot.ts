@@ -4,7 +4,10 @@ import type { Page } from "puppeteer";
 import sharp from "sharp";
 
 import { CONFIG } from "../config";
-import { applyConsentHiding, tryDismissConsentDialogs } from "./screenshot-consent";
+import {
+  applyConsentHiding,
+  tryDismissConsentDialogs,
+} from "./screenshot-consent";
 import { applyMediaBlur } from "./screenshot-blur";
 import { createStatusFallbackBuffer } from "./screenshot-status-fallback";
 import {
@@ -135,7 +138,7 @@ const waitForUrlToStabilize = async (
       stableSince = Date.now();
       try {
         await page.waitForNavigation({
-          waitUntil: "load",
+          waitUntil: "domcontentloaded",
           timeout: Math.max(500, deadline - Date.now()),
         });
       } catch {
@@ -230,14 +233,17 @@ export const captureScreenshot = async (
     // that Puppeteer does not automatically release when the page closes.
     const client = await page.createCDPSession();
     try {
-      await client.send("Browser.setDownloadBehavior", {
-        behavior: "deny",
-        eventsEnabled: false,
-      }).catch(() =>
-        client.send("Page.setDownloadBehavior", { behavior: "deny" })
-      ).catch(() => {
-        console.warn("Could not set download behavior");
-      });
+      await client
+        .send("Browser.setDownloadBehavior", {
+          behavior: "deny",
+          eventsEnabled: false,
+        })
+        .catch(() =>
+          client.send("Page.setDownloadBehavior", { behavior: "deny" }),
+        )
+        .catch(() => {
+          console.warn("Could not set download behavior");
+        });
     } finally {
       await client.detach().catch(() => {});
     }
@@ -249,10 +255,7 @@ export const captureScreenshot = async (
 
     await preparePageForAutomationCapture(page);
 
-    if (
-      CONFIG.screenshot.dns.enabled &&
-      CONFIG.screenshot.dns.checkDnsStatus
-    ) {
+    if (CONFIG.screenshot.dns.enabled && CONFIG.screenshot.dns.checkDnsStatus) {
       const profileVerification =
         await verifyConfiguredDnsProfileDetailed(page);
       if (
@@ -290,7 +293,7 @@ export const captureScreenshot = async (
     page.setDefaultTimeout(CONFIG.screenshot.responseTimeoutMs);
 
     const response = await page.goto(url, {
-      waitUntil: "load",
+      waitUntil: "domcontentloaded",
       timeout: CONFIG.screenshot.responseTimeoutMs,
     });
 
@@ -302,6 +305,7 @@ export const captureScreenshot = async (
       CONFIG.screenshot.redirectSettleMaxMs,
       CONFIG.screenshot.responseTimeoutMs,
     );
+
     await waitForUrlToStabilize(
       page,
       settleMax,
@@ -312,7 +316,10 @@ export const captureScreenshot = async (
       setTimeout(resolve, CONFIG.screenshot.pageSettleMs),
     );
 
-    await tryDismissConsentDialogs(page, CONFIG.screenshot.consentClickBudgetMs);
+    await tryDismissConsentDialogs(
+      page,
+      CONFIG.screenshot.consentClickBudgetMs,
+    );
     await applyConsentHiding(page, page.url());
 
     const status = response.status();
