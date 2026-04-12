@@ -227,7 +227,7 @@ export const captureScreenshot = async (
     });
 
     await new Promise((resolve) =>
-      setTimeout(resolve, CONFIG.server.processingRefreshSeconds * 1000),
+      setTimeout(resolve, CONFIG.screenshot.pageSettleMs),
     );
 
     await applyConsentHiding(page, url);

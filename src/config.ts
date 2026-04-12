@@ -16,7 +16,8 @@ export const CONFIG = {
     desktopViewportHeight: 720,
     pageZoomPercent: 120,
     emulatedColorScheme: "dark",
-    responseTimeoutMs: 10_000,
+    responseTimeoutMs: 15_000,
+    pageSettleMs: 1_500,
     browserLaunchArgs: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
