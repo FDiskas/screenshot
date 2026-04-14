@@ -15,6 +15,16 @@ import { hideAdsElements } from "./hide-ads";
 import { applyMediaBlur } from "./screenshot-blur";
 import { createStatusFallbackBuffer } from "./screenshot-status-fallback";
 
+// Register plugins once at module scope
+puppeteer.use(
+  AdblockerPlugin({
+    blockTrackers: true,
+    blockTrackersAndAnnoyances: true,
+    interceptResolutionPriority: DEFAULT_INTERCEPT_RESOLUTION_PRIORITY,
+    useCache: false,
+  }),
+);
+
 export interface ScreenshotOptions {
   url: string;
   width?: number;
@@ -170,14 +180,6 @@ export const captureScreenshot = async (
         error: "Only HTTPS URLs are allowed",
       };
     }
-
-    puppeteer.use(
-      AdblockerPlugin({
-        blockTrackers: true,
-        blockTrackersAndAnnoyances: true,
-        interceptResolutionPriority: DEFAULT_INTERCEPT_RESOLUTION_PRIORITY,
-      }),
-    );
 
     browser = await puppeteer.launch({
       headless: true,
