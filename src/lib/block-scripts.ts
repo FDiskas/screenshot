@@ -1,4 +1,4 @@
-import type { Page, HTTPRequest } from "puppeteer";
+import type { HTTPRequest, Page } from "puppeteer";
 
 export const applySmartBlocker = async (page: Page) => {
   const WHITELIST_REGEX =
@@ -34,7 +34,7 @@ export const applySmartBlocker = async (page: Page) => {
       } else {
         request.continue();
       }
-    } catch (e) {
+    } catch (_e) {
       // Fallback for edge cases (like data URIs)
       request.continue();
     }

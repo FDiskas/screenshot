@@ -1,5 +1,13 @@
+import {
+  Book,
+  CheckCircle,
+  Code,
+  Info,
+  RefreshCcw,
+  Terminal,
+  Zap,
+} from "lucide-react";
 import type { FC } from "react";
-import { Book, Code, Terminal, Zap, Info, CheckCircle, RefreshCcw } from "lucide-react";
 
 export const DocsPage: FC<{ origin: string }> = ({ origin }) => {
   const jsExample = `
@@ -49,14 +57,18 @@ async function captureWithPolling(url, imgElement) {
         <div className="max-w-3xl">
           <div className="flex items-center gap-2 text-primary mb-4">
             <Book className="h-5 w-5" />
-            <span className="font-semibold uppercase tracking-wider text-sm">Documentation</span>
+            <span className="font-semibold uppercase tracking-wider text-sm">
+              Documentation
+            </span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60">
-            Getting Started with <span className="text-primary italic">SnapService</span>
+            Getting Started with{" "}
+            <span className="text-primary italic">SnapService</span>
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            Learn how to integrate our automated screenshot API into your applications. 
-            SnapService provides high-fidelity previews with intelligent caching.
+            Learn how to integrate our automated screenshot API into your
+            applications. SnapService provides high-fidelity previews with
+            intelligent caching.
           </p>
         </div>
       </section>
@@ -72,21 +84,27 @@ async function captureWithPolling(url, imgElement) {
               </h2>
               <div className="bg-muted/50 rounded-2xl p-6 border border-border/50 font-mono text-sm overflow-x-auto">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-primary/20 text-primary px-2 py-0.5 rounded font-bold text-xs uppercase">GET</span>
-                  <span className="text-foreground/80">{origin}/api/screenshot</span>
+                  <span className="bg-primary/20 text-primary px-2 py-0.5 rounded font-bold text-xs uppercase">
+                    GET
+                  </span>
+                  <span className="text-foreground/80">
+                    {origin}/api/screenshot
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-4 ml-14">
                   Returns PNG image bytes directly when cached.
                 </p>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-primary/20 text-primary px-2 py-0.5 rounded font-bold text-xs uppercase">GET</span>
+                  <span className="bg-primary/20 text-primary px-2 py-0.5 rounded font-bold text-xs uppercase">
+                    GET
+                  </span>
                   <span className="text-foreground/80">{origin}/api/raw</span>
                 </div>
                 <p className="text-xs text-muted-foreground ml-14">
                   Returns HTTP 302 redirect to the cached static image path.
                 </p>
-                </div>
               </div>
+            </div>
 
             <div>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -105,18 +123,38 @@ async function captureWithPolling(url, imgElement) {
                   <tbody className="divide-y">
                     <tr>
                       <td className="px-6 py-4 font-mono text-primary">url</td>
-                      <td className="px-6 py-4 text-muted-foreground">string</td>
-                      <td className="px-6 py-4">The target URL (must start with <code className="bg-muted px-1.5 py-0.5 rounded">https://</code>)</td>
+                      <td className="px-6 py-4 text-muted-foreground">
+                        string
+                      </td>
+                      <td className="px-6 py-4">
+                        The target URL (must start with{" "}
+                        <code className="bg-muted px-1.5 py-0.5 rounded">
+                          https://
+                        </code>
+                        )
+                      </td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-mono text-primary">width</td>
-                      <td className="px-6 py-4 text-muted-foreground">number</td>
-                      <td className="px-6 py-4">Viewport width (default: 387)</td>
+                      <td className="px-6 py-4 font-mono text-primary">
+                        width
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground">
+                        number
+                      </td>
+                      <td className="px-6 py-4">
+                        Viewport width (default: 387)
+                      </td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-mono text-primary">height</td>
-                      <td className="px-6 py-4 text-muted-foreground">number</td>
-                      <td className="px-6 py-4">Viewport height (default: 217)</td>
+                      <td className="px-6 py-4 font-mono text-primary">
+                        height
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground">
+                        number
+                      </td>
+                      <td className="px-6 py-4">
+                        Viewport height (default: 217)
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -130,30 +168,56 @@ async function captureWithPolling(url, imgElement) {
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4 p-5 rounded-2xl bg-card border shadow-sm">
-                  <div className="bg-green-500/10 text-green-600 h-10 w-10 shrink-0 flex items-center justify-center rounded-xl font-bold">200</div>
+                  <div className="bg-green-500/10 text-green-600 h-10 w-10 shrink-0 flex items-center justify-center rounded-xl font-bold">
+                    200
+                  </div>
                   <div>
                     <h4 className="font-semibold mb-1">Success</h4>
-                    <p className="text-sm text-muted-foreground">Returns the PNG image binary directly from cache on <code className="bg-muted px-1.5 py-0.5 rounded">/api/screenshot</code>.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Returns the PNG image binary directly from cache on{" "}
+                      <code className="bg-muted px-1.5 py-0.5 rounded">
+                        /api/screenshot
+                      </code>
+                      .
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 p-5 rounded-2xl bg-card border shadow-sm">
-                  <div className="bg-amber-500/10 text-amber-600 h-10 w-10 shrink-0 flex items-center justify-center rounded-xl font-bold">302</div>
+                  <div className="bg-amber-500/10 text-amber-600 h-10 w-10 shrink-0 flex items-center justify-center rounded-xl font-bold">
+                    302
+                  </div>
                   <div>
                     <h4 className="font-semibold mb-1">Redirect</h4>
-                    <p className="text-sm text-muted-foreground">On <code className="bg-muted px-1.5 py-0.5 rounded">/api/raw</code>, cached images are returned as a redirect to a static PNG URL.</p>
+                    <p className="text-sm text-muted-foreground">
+                      On{" "}
+                      <code className="bg-muted px-1.5 py-0.5 rounded">
+                        /api/raw
+                      </code>
+                      , cached images are returned as a redirect to a static PNG
+                      URL.
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-4 p-5 rounded-2xl bg-card border shadow-sm">
-                  <div className="bg-blue-500/10 text-blue-600 h-10 w-10 shrink-0 flex items-center justify-center rounded-xl font-bold">202</div>
+                  <div className="bg-blue-500/10 text-blue-600 h-10 w-10 shrink-0 flex items-center justify-center rounded-xl font-bold">
+                    202
+                  </div>
                   <div>
-                    <h4 className="font-semibold mb-1">Accepted (Processing)</h4>
+                    <h4 className="font-semibold mb-1">
+                      Accepted (Processing)
+                    </h4>
                     <p className="text-sm text-muted-foreground mb-3">
-                      The screenshot is being generated in the background. A placeholder image is returned with a 
-                      <code className="bg-muted px-1.5 py-0.5 rounded text-primary mx-1">Refresh</code> header.
+                      The screenshot is being generated in the background. A
+                      placeholder image is returned with a
+                      <code className="bg-muted px-1.5 py-0.5 rounded text-primary mx-1">
+                        Refresh
+                      </code>{" "}
+                      header.
                     </p>
                     <div className="flex items-center gap-2 text-xs font-medium text-primary bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">
                       <RefreshCcw className="h-3 w-3 animate-spin" />
-                      Tip: Respect the Refresh header to automatically poll for completion.
+                      Tip: Respect the Refresh header to automatically poll for
+                      completion.
                     </div>
                   </div>
                 </div>
@@ -169,8 +233,10 @@ async function captureWithPolling(url, imgElement) {
                   Quick Example
                 </h3>
                 <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                  The most efficient way to use the API is to check if the response contains 
-                  a <code className="text-primary font-mono">Refresh</code> header.
+                  The most efficient way to use the API is to check if the
+                  response contains a{" "}
+                  <code className="text-primary font-mono">Refresh</code>{" "}
+                  header.
                 </p>
                 <div className="space-y-4">
                   <div className="bg-card p-4 rounded-xl border">
@@ -193,7 +259,9 @@ async function captureWithPolling(url, imgElement) {
           <div className="flex items-center justify-between px-6 py-4 bg-white/5 border-b border-white/5">
             <div className="flex items-center gap-2">
               <Code className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-white/90">JavaScript Implementation</span>
+              <span className="text-sm font-semibold text-white/90">
+                JavaScript Implementation
+              </span>
             </div>
             <div className="flex gap-1.5">
               <div className="w-3 h-3 rounded-full bg-red-500/50" />

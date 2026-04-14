@@ -1,6 +1,6 @@
-import { hatchet } from "../hatchet";
-import { runPurge } from "../../db/purge";
 import { CONFIG } from "../../config";
+import { runPurge } from "../../db/purge";
+import { hatchet } from "../hatchet";
 
 export const PurgeWorkflow = hatchet.workflow({
   name: CONFIG.workflows.purge.name,

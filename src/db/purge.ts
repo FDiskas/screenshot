@@ -1,8 +1,8 @@
-import { join } from "node:path";
 import { existsSync, readdirSync } from "node:fs";
-import { dbService } from "./index";
-import { cacheService } from "../lib/cache";
+import { join } from "node:path";
 import { CONFIG } from "../config";
+import { cacheService } from "../lib/cache";
+import { dbService } from "./index";
 
 export async function runPurge() {
   console.log("Starting full purge of screenshots...");

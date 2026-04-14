@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { cacheService } from "../lib/cache";
 import { CONFIG } from "../config";
+import { cacheService } from "../lib/cache";
 
 export interface ScreenshotRecord {
   id: number;

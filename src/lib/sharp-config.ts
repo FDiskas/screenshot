@@ -15,5 +15,3 @@ if (typeof sharp.concurrency === "function") {
   // Single libvips worker thread is sufficient for a 1-slot Hatchet worker.
   sharp.concurrency(1);
 }
-
-

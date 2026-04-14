@@ -1,26 +1,28 @@
-import { describe, it, expect, vi } from "vitest";
-import { checkSafety } from "../src/lib/safety";
+import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { cacheService } from "../src/lib/cache";
+import { checkSafety } from "../src/lib/safety";
 
-// Mock fetch for safety check
-global.fetch = vi.fn() as unknown as typeof fetch;
+// Mock fetch globally using spyOn
+const fetchSpy = spyOn(globalThis, "fetch");
+
+afterEach(() => {
+  fetchSpy.mockClear(); // Reset call history
+});
 
 describe("Safety Check", () => {
   it("should return true if status is false (safe)", async () => {
-    (fetch as any).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ url: "google.com", status: false }),
-    });
+    fetchSpy.mockResolvedValue(
+      Response.json({ url: "google.com", status: false }),
+    );
 
     const isSafe = await checkSafety("https://google.com");
     expect(isSafe).toBe(true);
   });
 
   it("should return false if status is true (unsafe)", async () => {
-    (fetch as any).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ url: "malware.com", status: true }),
-    });
+    fetchSpy.mockResolvedValue(
+      Response.json({ url: "malware.com", status: true }),
+    );
 
     const isSafe = await checkSafety("https://malware.com");
     expect(isSafe).toBe(false);
@@ -38,7 +40,6 @@ describe("Cache Service", () => {
   });
 
   it("should generate correct relative path", () => {
-    const url = "https://example.com";
     const path = cacheService.getPath(
       "example.com",
       new Date("2026-04-07T00:00:00Z"),

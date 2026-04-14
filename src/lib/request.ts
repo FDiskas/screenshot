@@ -23,8 +23,14 @@ export function parseScreenshotParams(
     url = url.replace("http://", "https://");
   }
 
-  const width = parseInt(rawWidth || String(CONFIG.screenshot.defaultWidth));
-  const height = parseInt(rawHeight || String(CONFIG.screenshot.defaultHeight));
+  const width = parseInt(
+    rawWidth || String(CONFIG.screenshot.defaultWidth),
+    10,
+  );
+  const height = parseInt(
+    rawHeight || String(CONFIG.screenshot.defaultHeight),
+    10,
+  );
 
   return { url, width, height };
 }

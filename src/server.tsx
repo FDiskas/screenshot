@@ -1,19 +1,24 @@
-import { Hono } from "hono";
-import { serveStatic } from "hono/bun";
-import { reactRenderer } from "@hono/react-renderer";
 import { readFile } from "node:fs/promises";
-import { Layout } from "./components/layout";
-import { LandingPage } from "./components/LandingPage";
+import { reactRenderer } from "@hono/react-renderer";
+import { type Context, Hono } from "hono";
+import { serveStatic } from "hono/bun";
+import type { BlankEnv, BlankInput } from "hono/types";
 import { DocsPage } from "./components/DocsPage";
-import { dbService } from "./db";
-import { checkSafety } from "./lib/safety";
-import { getStatusPlaceholder } from "./lib/placeholder";
-import { parseScreenshotParams, isValidScreenshotUrl, resolveScreenshotDomain } from "./lib/request";
-import { hatchet } from "./lib/hatchet";
+import { LandingPage } from "./components/LandingPage";
+import { Layout } from "./components/layout";
 import { CONFIG } from "./config";
-import { ScreenshotWorkflow } from "./lib/workflows/screenshot.workflow";
+import { dbService } from "./db";
+import { hatchet } from "./lib/hatchet";
+import { getStatusPlaceholder } from "./lib/placeholder";
+import {
+  isValidScreenshotUrl,
+  parseScreenshotParams,
+  resolveScreenshotDomain,
+} from "./lib/request";
+import { checkSafety } from "./lib/safety";
 import { CleanupWorkflow } from "./lib/workflows/cleanup.workflow";
 import { PurgeWorkflow } from "./lib/workflows/purge.workflow";
+import { ScreenshotWorkflow } from "./lib/workflows/screenshot.workflow";
 
 async function startWorker() {
   const worker = await hatchet.worker(CONFIG.worker.name, {
@@ -23,7 +28,9 @@ async function startWorker() {
   await worker.registerWorkflow(CleanupWorkflow);
   await worker.registerWorkflow(PurgeWorkflow);
   await worker.start();
-  console.log("Hatchet worker started within server process and listening for screenshot events...");
+  console.log(
+    "Hatchet worker started within server process and listening for screenshot events...",
+  );
 }
 startWorker().catch(console.error);
 
@@ -65,35 +72,44 @@ app.use("/screenshots/*", async (c, next) => {
 app.use("/screenshots/*", serveStatic({ root: "./public" }));
 
 // SSR Renderer
+type RendererProps = { title?: string; children?: React.ReactNode };
 app.use(
   "*",
-  reactRenderer(({ children, ...props }) => {
-    const title = (props as any).title || CONFIG.server.defaultTitle;
+  reactRenderer(({ children, ...props }: RendererProps) => {
+    const title = props.title || CONFIG.server.defaultTitle;
     return <Layout title={title}>{children}</Layout>;
-  })
+  }),
 );
 
 // Routes
 app.get("/", (c) => {
   const latest = dbService.getLatest();
   // Better origin detection
-  const proto = c.req.header("x-forwarded-proto") || new URL(c.req.url).protocol.replace(":", "");
+  const proto =
+    c.req.header("x-forwarded-proto") ||
+    new URL(c.req.url).protocol.replace(":", "");
   const host = c.req.header("x-forwarded-host") || c.req.header("host");
   const origin = host ? `${proto}://${host}` : new URL(c.req.url).origin;
-  
-  return c.render(<LandingPage latest={latest} origin={origin} />, { title: CONFIG.server.homeTitle });
+
+  return c.render(<LandingPage latest={latest} origin={origin} />, {
+    title: CONFIG.server.homeTitle,
+  });
 });
 
 app.get("/docs", (c) => {
-  const proto = c.req.header("x-forwarded-proto") || new URL(c.req.url).protocol.replace(":", "");
+  const proto =
+    c.req.header("x-forwarded-proto") ||
+    new URL(c.req.url).protocol.replace(":", "");
   const host = c.req.header("x-forwarded-host") || c.req.header("host");
   const origin = host ? `${proto}://${host}` : new URL(c.req.url).origin;
-  
-  return c.render(<DocsPage origin={origin} />, { title: CONFIG.server.docsTitle });
+
+  return c.render(<DocsPage origin={origin} />, {
+    title: CONFIG.server.docsTitle,
+  });
 });
 
 const handleScreenshotRequest = async (
-  c: any,
+  c: Context<BlankEnv, "/api/screenshot" | "/api/raw", BlankInput>,
   cacheMode: "image" | "redirect",
 ) => {
   const params = parseScreenshotParams(
@@ -168,19 +184,20 @@ const handleScreenshotRequest = async (
   // (Previously a second "pending" window blocked new events for 4× this interval — users saw 202
   // placeholders but no new Hatchet task for up to two minutes.)
   const shouldTrigger =
-    lastTrigger === 0 ||
-    now - lastTrigger > CONFIG.server.processingRetryMs;
+    lastTrigger === 0 || now - lastTrigger > CONFIG.server.processingRetryMs;
 
   if (shouldTrigger) {
     recentTriggerByDomain.set(domain, now);
-    hatchet.events.push(CONFIG.server.screenshotEventName, {
-      url: domainUrl,
-      width,
-      height
-    }).catch(err => {
-      recentTriggerByDomain.delete(domain);
-      console.error("Hatchet trigger error:", err);
-    });
+    hatchet.events
+      .push(CONFIG.server.screenshotEventName, {
+        url: domainUrl,
+        width,
+        height,
+      })
+      .catch((err) => {
+        recentTriggerByDomain.delete(domain);
+        console.error("Hatchet trigger error:", err);
+      });
   } else {
     const waitMs = CONFIG.server.processingRetryMs - (now - lastTrigger);
     console.info(
@@ -189,9 +206,9 @@ const handleScreenshotRequest = async (
   }
 
   const processingPlaceholder = await getStatusPlaceholder(202, width, height);
-  return c.body(new Uint8Array(processingPlaceholder), 200, { 
+  return c.body(new Uint8Array(processingPlaceholder), 200, {
     "Content-Type": "image/png",
-    "Refresh": String(CONFIG.server.processingRefreshSeconds),
+    Refresh: String(CONFIG.server.processingRefreshSeconds),
     "Cache-Control": "no-store, no-cache, must-revalidate",
   });
 };
@@ -235,8 +252,15 @@ app.get("/api/reload", async (c) => {
 
   const cachedAge = Date.now() - new Date(existing.created_at).getTime();
   if (cachedAge < CONFIG.server.minReloadAgeMs) {
-    const remainingDays = Math.ceil((CONFIG.server.minReloadAgeMs - cachedAge) / (24 * 60 * 60 * 1000));
-    return c.json({ error: `Image is too recent to reload. Try again in ${remainingDays} day(s)` }, 429);
+    const remainingDays = Math.ceil(
+      (CONFIG.server.minReloadAgeMs - cachedAge) / (24 * 60 * 60 * 1000),
+    );
+    return c.json(
+      {
+        error: `Image is too recent to reload. Try again in ${remainingDays} day(s)`,
+      },
+      429,
+    );
   }
 
   const isSafe = await checkSafety(domainUrl);

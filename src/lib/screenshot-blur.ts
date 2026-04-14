@@ -47,8 +47,8 @@ export const applyMediaBlur = async (
   blurConfig: BlurConfig,
 ): Promise<void> => {
   await page.evaluate((config) => {
-    const doc = (globalThis as any).document;
-    const win = (globalThis as any).window;
+    const doc = globalThis.document;
+    const win = globalThis.window;
     if (!doc) {
       return;
     }
@@ -83,33 +83,26 @@ export const applyMediaBlur = async (
       }
     };
 
-    const getIntrinsicArea = (node: any): number => {
-      const tag = String(node?.tagName || "").toUpperCase();
-
-      if (tag === "IMG") {
-        return (
-          (Number(node.naturalWidth) || 0) * (Number(node.naturalHeight) || 0)
-        );
+    const getIntrinsicArea = (
+      node: HTMLImageElement | HTMLVideoElement | HTMLPictureElement,
+    ): number => {
+      if (node instanceof HTMLImageElement) {
+        return node.naturalWidth * node.naturalHeight;
       }
 
-      if (tag === "VIDEO") {
-        return (Number(node.videoWidth) || 0) * (Number(node.videoHeight) || 0);
+      if (node instanceof HTMLVideoElement) {
+        return node.videoWidth * node.videoHeight;
       }
 
-      if (tag === "PICTURE") {
-        const img = node.querySelector?.("img");
-        if (!img) {
-          return 0;
-        }
-        return (
-          (Number(img.naturalWidth) || 0) * (Number(img.naturalHeight) || 0)
-        );
+      if (node instanceof HTMLPictureElement) {
+        const img = node.querySelector("img");
+        return img ? img.naturalWidth * img.naturalHeight : 0;
       }
 
       return 0;
     };
 
-    const hasBackgroundImage = (node: any): boolean => {
+    const hasBackgroundImage = (node: HTMLElement): boolean => {
       if (!win?.getComputedStyle) {
         return false;
       }
@@ -117,7 +110,7 @@ export const applyMediaBlur = async (
       return bg !== "none";
     };
 
-    const applyBlur = (node: any) => {
+    const applyBlur = (node: HTMLElement) => {
       if (!node) {
         return;
       }
@@ -140,7 +133,7 @@ export const applyMediaBlur = async (
 
     const elements = Array.from(doc.querySelectorAll(config.selector));
     for (const element of elements) {
-      const node = element as any;
+      const node = element as HTMLElement;
       if (!node || typeof node.getBoundingClientRect !== "function") {
         continue;
       }

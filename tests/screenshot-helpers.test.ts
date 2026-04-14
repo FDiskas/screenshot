@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+import type { Page } from "puppeteer";
+import { describe, expect, it, vi } from "vitest";
 import {
   applyMediaBlur,
-  shouldBlurMediaCandidate,
   type BlurConfig,
+  shouldBlurMediaCandidate,
 } from "../src/lib/screenshot-blur";
 
 const blurConfig: BlurConfig = {
@@ -72,7 +73,7 @@ describe("Blur helper", () => {
 
   it("executes page.evaluate with blur config", async () => {
     const evaluate = vi.fn().mockResolvedValue(undefined);
-    const page = { evaluate } as any;
+    const page = { evaluate } as unknown as Page;
 
     await applyMediaBlur(page, blurConfig);
 

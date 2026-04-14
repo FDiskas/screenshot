@@ -1,14 +1,15 @@
+import type { UnknownInputType } from "@hatchet-dev/typescript-sdk";
+import { CONFIG } from "../../config";
+import { cacheService } from "../cache";
 import { hatchet } from "../hatchet";
 import { captureScreenshot } from "../screenshot";
 import { createStatusFallbackBuffer } from "../screenshot-status-fallback";
-import { cacheService } from "../cache";
-import { CONFIG } from "../../config";
 
 interface ScreenshotInput {
   url: string;
   width: number;
   height: number;
-  [key: string]: any;
+  [key: string]: UnknownInputType;
 }
 
 export const ScreenshotWorkflow = hatchet.workflow<ScreenshotInput>({
@@ -21,7 +22,7 @@ export const ScreenshotWorkflow = hatchet.workflow<ScreenshotInput>({
 ScreenshotWorkflow.task({
   name: CONFIG.workflows.screenshot.taskName,
   scheduleTimeout: "1h",
-  fn: async (input, ctx) => {
+  fn: async (input, _ctx) => {
     const { url, width, height } = input;
     const domainUrl = cacheService.getDomainUrl(url);
     console.log(
@@ -53,7 +54,7 @@ ScreenshotWorkflow.task({
         );
         return { status: result.status, imagePath };
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Workflow error for ${domainUrl}:`, error);
       throw error; // Let Hatchet handle retries if configured
     }

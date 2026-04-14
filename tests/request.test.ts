@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { CONFIG } from "../src/config";
 import {
-  parseScreenshotParams,
   isValidScreenshotUrl,
+  parseScreenshotParams,
   resolveScreenshotDomain,
 } from "../src/lib/request";
-import { CONFIG } from "../src/config";
 
 describe("parseScreenshotParams", () => {
   it("returns null when url is undefined", () => {
@@ -22,7 +22,7 @@ describe("parseScreenshotParams", () => {
       undefined,
     );
     expect(result).not.toBeNull();
-    expect(result!.url).toBe("https://example.com");
+    expect(result?.url).toBe("https://example.com");
   });
 
   it("keeps https:// URLs unchanged", () => {
@@ -31,7 +31,7 @@ describe("parseScreenshotParams", () => {
       undefined,
       undefined,
     );
-    expect(result!.url).toBe("https://example.com");
+    expect(result?.url).toBe("https://example.com");
   });
 
   it("passes through non-http URLs unchanged", () => {
@@ -40,7 +40,7 @@ describe("parseScreenshotParams", () => {
       undefined,
       undefined,
     );
-    expect(result!.url).toBe("ftp://example.com");
+    expect(result?.url).toBe("ftp://example.com");
   });
 
   it("uses default width and height when not provided", () => {
@@ -49,20 +49,20 @@ describe("parseScreenshotParams", () => {
       undefined,
       undefined,
     );
-    expect(result!.width).toBe(CONFIG.screenshot.defaultWidth);
-    expect(result!.height).toBe(CONFIG.screenshot.defaultHeight);
+    expect(result?.width).toBe(CONFIG.screenshot.defaultWidth);
+    expect(result?.height).toBe(CONFIG.screenshot.defaultHeight);
   });
 
   it("parses custom width and height", () => {
     const result = parseScreenshotParams("https://example.com", "1024", "768");
-    expect(result!.width).toBe(1024);
-    expect(result!.height).toBe(768);
+    expect(result?.width).toBe(1024);
+    expect(result?.height).toBe(768);
   });
 
   it("falls back to defaults for non-numeric width/height", () => {
     const result = parseScreenshotParams("https://example.com", "abc", "");
-    expect(result!.width).toBeNaN();
-    expect(result!.height).toBe(CONFIG.screenshot.defaultHeight);
+    expect(result?.width).toBeNaN();
+    expect(result?.height).toBe(CONFIG.screenshot.defaultHeight);
   });
 });
 
@@ -92,18 +92,18 @@ describe("resolveScreenshotDomain", () => {
   it("resolves domain and domainUrl from a valid URL", () => {
     const result = resolveScreenshotDomain("https://www.Example.COM/path?q=1");
     expect(result).not.toBeNull();
-    expect(result!.domain).toBe("www.example.com");
-    expect(result!.domainUrl).toBe("https://www.example.com");
+    expect(result?.domain).toBe("www.example.com");
+    expect(result?.domainUrl).toBe("https://www.example.com");
   });
 
   it("strips path, query and hash", () => {
     const result = resolveScreenshotDomain("https://test.io/page?a=1#top");
-    expect(result!.domainUrl).toBe("https://test.io");
+    expect(result?.domainUrl).toBe("https://test.io");
   });
 
   it("lowercases the hostname", () => {
     const result = resolveScreenshotDomain("https://ExAmPlE.CoM");
-    expect(result!.domain).toBe("example.com");
+    expect(result?.domain).toBe("example.com");
   });
 
   it("returns null for an invalid URL", () => {

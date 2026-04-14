@@ -1,15 +1,19 @@
 import "./sharp-config";
+import path from "node:path";
+import {
+  type Browser,
+  DEFAULT_INTERCEPT_RESOLUTION_PRIORITY,
+  type Page,
+} from "puppeteer";
 import puppeteer from "puppeteer-extra";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
-import { DEFAULT_INTERCEPT_RESOLUTION_PRIORITY, type Page } from "puppeteer";
 import sharp from "sharp";
-import path from "node:path";
 
 import { CONFIG } from "../config";
-import { applyMediaBlur } from "./screenshot-blur";
-import { createStatusFallbackBuffer } from "./screenshot-status-fallback";
 import { applySmartBlocker } from "./block-scripts";
 import { hideAdsElements } from "./hide-ads";
+import { applyMediaBlur } from "./screenshot-blur";
+import { createStatusFallbackBuffer } from "./screenshot-status-fallback";
 
 export interface ScreenshotOptions {
   url: string;
@@ -41,7 +45,7 @@ const applyPageZoom = async (page: Page): Promise<void> => {
 
   const zoomFactor = zoomPercent / 100;
   await page.evaluate((factor: number) => {
-    const html = (globalThis as any).document?.documentElement;
+    const html = globalThis.document?.documentElement;
     if (!html) {
       return;
     }
@@ -82,7 +86,7 @@ const escapeXml = (value: string): string => {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 };
 
@@ -155,8 +159,8 @@ export const captureScreenshot = async (
     height = CONFIG.screenshot.defaultHeight,
   } = options;
 
-  let browser;
-  let userDataDir: string | null = null;
+  let browser: Browser | null = null;
+  const userDataDir: string | null = null;
   try {
     // Only allow HTTPS
     if (!url.startsWith(CONFIG.screenshot.allowedProtocol)) {
@@ -296,12 +300,15 @@ export const captureScreenshot = async (
       .toBuffer();
 
     return { buffer: finalBuffer, status, finalUrl };
-  } catch (error: any) {
-    console.error(`Puppeteer error for ${url}:`, error.message);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(`Puppeteer error for ${url}:`, error.message);
+    }
 
     if (
-      error.message.includes("Navigation timeout") ||
-      error.message.includes("Timeout")
+      error instanceof Error &&
+      (error.message.includes("Navigation timeout") ||
+        error.message.includes("Timeout"))
     ) {
       return {
         buffer: null,
@@ -312,13 +319,18 @@ export const captureScreenshot = async (
 
     // Handle certificate errors specifically if possible
     if (
-      error.message.includes("ERR_CERT_AUTHORITY_INVALID") ||
-      error.message.includes("SSL certificate error")
+      error instanceof Error &&
+      (error.message.includes("ERR_CERT_AUTHORITY_INVALID") ||
+        error.message.includes("SSL certificate error"))
     ) {
       return { buffer: null, status: 495, error: "Invalid SSL certificate" };
     }
 
-    return { buffer: null, status: 500, error: error.message };
+    return {
+      buffer: null,
+      status: 500,
+      error: error instanceof Error ? error.message : String(error),
+    };
   } finally {
     if (browser) {
       await browser.close();

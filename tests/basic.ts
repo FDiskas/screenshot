@@ -1,8 +1,8 @@
+import path from "node:path";
 import puppeteer from "puppeteer-extra";
 import Adblocker from "puppeteer-extra-plugin-adblocker";
-import { applySmartBlocker } from "../src/lib/block-scripts";
-import path from "node:path";
 import { CONFIG } from "../src/config";
+import { applySmartBlocker } from "../src/lib/block-scripts";
 import { hideAdsElements } from "../src/lib/hide-ads";
 import { applyMediaBlur } from "../src/lib/screenshot-blur";
 

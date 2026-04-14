@@ -1,6 +1,6 @@
-import { hatchet } from "../hatchet";
-import { runCleanup } from "../../db/cleanup";
 import { CONFIG } from "../../config";
+import { runCleanup } from "../../db/cleanup";
+import { hatchet } from "../hatchet";
 
 export const CleanupWorkflow = hatchet.workflow({
   name: CONFIG.workflows.cleanup.name,

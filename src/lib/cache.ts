@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { dirname, join } from "node:path";
 import {
   existsSync,
   mkdirSync,
@@ -8,6 +7,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { dirname, join } from "node:path";
 import { CONFIG } from "../config";
 
 const CACHE_DIR = join(process.cwd(), ...CONFIG.cache.rootDir);

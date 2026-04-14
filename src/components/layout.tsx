@@ -1,7 +1,10 @@
+import { Moon, Sun } from "lucide-react";
 import type { FC, PropsWithChildren } from "react";
-import { Sun, Moon } from "lucide-react";
 
-export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, title = "SnapService - Quick URL Screenshots" }) => {
+export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
+  children,
+  title = "SnapService - Quick URL Screenshots",
+}) => {
   return (
     <html lang="en">
       <head>
@@ -11,8 +14,15 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="stylesheet" href="/index.css" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <script>{`
           (function() {
             try {
@@ -35,16 +45,43 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
       <body className="bg-background min-h-screen text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
-            <a href="/" className="flex items-center gap-2" aria-label="Go to home page">
-              <img src="/favicon.svg" alt="SnapService logo" className="h-8 w-8 rounded-lg shadow-lg shadow-primary/20" />
-              <span className="text-xl font-bold tracking-tight">SnapService</span>
+            <a
+              href="/"
+              className="flex items-center gap-2"
+              aria-label="Go to home page"
+            >
+              <img
+                src="/favicon.svg"
+                alt="SnapService logo"
+                className="h-8 w-8 rounded-lg shadow-lg shadow-primary/20"
+              />
+              <span className="text-xl font-bold tracking-tight">
+                SnapService
+              </span>
             </a>
             <nav className="flex items-center gap-6">
-              <a href="/" className="text-sm font-medium hover:text-primary transition-colors">Home</a>
-              <a href="#demo" className="text-sm font-medium hover:text-primary transition-colors">Demo</a>
-              <a href="#gallery" className="text-sm font-medium hover:text-primary transition-colors">Gallery</a>
+              <a
+                href="/"
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                Home
+              </a>
+              <a
+                href="#demo"
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                Demo
+              </a>
+              <a
+                href="#gallery"
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                Gallery
+              </a>
               <div className="h-8 w-px bg-border mx-2" />
-              <button 
+
+              <button
+                type="button"
                 id="theme-toggle"
                 className="p-2 rounded-md hover:bg-accent transition-colors"
                 aria-label="Toggle theme"
@@ -52,7 +89,12 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
                 <Sun className="h-5 w-5 dark:hidden" />
                 <Moon className="h-5 w-5 hidden dark:block" />
               </button>
-              <a href="/docs" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-all hover:scale-105">Get Started</a>
+              <a
+                href="/docs"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-all hover:scale-105"
+              >
+                Get Started
+              </a>
             </nav>
           </div>
         </header>
@@ -63,9 +105,18 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({ children, ti
               © 2026 SnapService. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-              <a href="#" className="hover:text-primary transition-colors">Terms</a>
-              <a href="https://is.coders.lt" className="hover:text-primary transition-colors">Safety API</a>
+              <a href="#" className="hover:text-primary transition-colors">
+                Privacy
+              </a>
+              <a href="#" className="hover:text-primary transition-colors">
+                Terms
+              </a>
+              <a
+                href="https://is.coders.lt"
+                className="hover:text-primary transition-colors"
+              >
+                Safety API
+              </a>
             </div>
           </div>
         </footer>
