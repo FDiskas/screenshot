@@ -1,22 +1,15 @@
 import "./sharp-config";
-import puppeteer from "puppeteer";
-import type { Page } from "puppeteer";
+import puppeteer from "puppeteer-extra";
+import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
+import { DEFAULT_INTERCEPT_RESOLUTION_PRIORITY, type Page } from "puppeteer";
 import sharp from "sharp";
+import path from "node:path";
 
 import { CONFIG } from "../config";
-import {
-  applyConsentHiding,
-  tryDismissConsentDialogs,
-} from "./screenshot-consent";
 import { applyMediaBlur } from "./screenshot-blur";
 import { createStatusFallbackBuffer } from "./screenshot-status-fallback";
-import {
-  cleanupDnsLaunchConfig,
-  createDnsLaunchConfig,
-  resolveViaConfiguredDns,
-  verifyConfiguredDnsProfileDetailed,
-  type DnsProfileVerificationResult,
-} from "./dns";
+import { applySmartBlocker } from "./block-scripts";
+import { hideAdsElements } from "./hide-ads";
 
 export interface ScreenshotOptions {
   url: string;
@@ -30,6 +23,11 @@ export interface ScreenshotResult {
   error?: string;
   finalUrl?: string;
 }
+
+const pathToExtension = path.resolve(
+  path.dirname(require.resolve("@duckduckgo/autoconsent")),
+  "addon-mv3",
+);
 
 const applyPageZoom = async (page: Page): Promise<void> => {
   const zoomPercent: number = CONFIG.screenshot.pageZoomPercent;
@@ -109,10 +107,6 @@ const buildOverlaySvg = (
 
 export interface DnsDiagnosticLogParams {
   hostname: string;
-  dnsEnabled: boolean;
-  dnsProviderAvailable: boolean;
-  verification: DnsProfileVerificationResult;
-  verificationEndpoint: string;
   enforceProfileMatch: boolean;
 }
 
@@ -138,7 +132,7 @@ const waitForUrlToStabilize = async (
       stableSince = Date.now();
       try {
         await page.waitForNavigation({
-          waitUntil: "domcontentloaded",
+          waitUntil: "networkidle0",
           timeout: Math.max(500, deadline - Date.now()),
         });
       } catch {
@@ -149,40 +143,6 @@ const waitForUrlToStabilize = async (
     } else if (Date.now() - stableSince >= stableMs) {
       return;
     }
-  }
-};
-
-export const emitDnsDiagnosticLog = (params: DnsDiagnosticLogParams): void => {
-  if (!CONFIG.screenshot.dns.verboseLogging) {
-    return;
-  }
-  const {
-    hostname,
-    dnsEnabled,
-    dnsProviderAvailable,
-    verification,
-    verificationEndpoint,
-    enforceProfileMatch,
-  } = params;
-  const entry = {
-    hostname,
-    dnsEnabled,
-    dnsProviderAvailable,
-    matches: verification.matches,
-    reason: verification.reason,
-    statusValue: verification.statusValue,
-    protocol: verification.protocol,
-    profile: verification.profile,
-    expectedProfileId: verification.expectedProfileId,
-    verificationEndpoint,
-    enforceProfileMatch,
-  };
-  const label = `[DNS] ${CONFIG.screenshot.dns.providerName} verification`;
-  if (verification.matches === false) {
-    console.warn(label, entry);
-  } else {
-    // matches === true (success) or matches === null (unreachable/error)
-    console.info(label, entry);
   }
 };
 
@@ -207,26 +167,27 @@ export const captureScreenshot = async (
       };
     }
 
-    let dnsProviderAvailable = false;
-    const hostname = new URL(url).hostname;
-    try {
-      dnsProviderAvailable = await resolveViaConfiguredDns(hostname);
-    } catch {
-      dnsProviderAvailable = false;
-    }
-
-    const dnsLaunchConfig = await createDnsLaunchConfig(
-      CONFIG.screenshot.browserLaunchArgs,
+    puppeteer.use(
+      AdblockerPlugin({
+        blockTrackers: true,
+        blockTrackersAndAnnoyances: true,
+        interceptResolutionPriority: DEFAULT_INTERCEPT_RESOLUTION_PRIORITY,
+      }),
     );
-    userDataDir = dnsLaunchConfig.userDataDir;
 
     browser = await puppeteer.launch({
       headless: true,
-      args: dnsLaunchConfig.launchArgs,
+      args: [
+        ...CONFIG.screenshot.browserLaunchArgs,
+        `--disable-extensions-except=${pathToExtension}`,
+        `--load-extension=${pathToExtension}`,
+      ],
       ...(userDataDir ? { userDataDir } : {}),
     });
 
     const page = await browser.newPage();
+
+    await applySmartBlocker(page);
 
     // Explicitly prevent file downloads.
     // CDPSession must be detached after use — it holds native transport handles
@@ -255,33 +216,6 @@ export const captureScreenshot = async (
 
     await preparePageForAutomationCapture(page);
 
-    if (CONFIG.screenshot.dns.enabled && CONFIG.screenshot.dns.checkDnsStatus) {
-      const profileVerification =
-        await verifyConfiguredDnsProfileDetailed(page);
-      if (
-        profileVerification.matches === false &&
-        CONFIG.screenshot.dns.enforceProfileMatch
-      ) {
-        const message =
-          profileVerification.reason === "doh-inactive"
-            ? `${CONFIG.screenshot.dns.providerName} DoH verification failed for ${url}; expected status=ok and protocol=DOH but got status=${profileVerification.statusValue ?? "unknown"}, protocol=${profileVerification.protocol ?? "unknown"}.`
-            : `${CONFIG.screenshot.dns.providerName} profile mismatch for ${url}; expected ${profileVerification.expectedProfileId ?? "(not set)"}, got ${profileVerification.profile ?? "unknown"}.`;
-        return {
-          buffer: null,
-          status: 503,
-          error: message,
-        };
-      }
-      emitDnsDiagnosticLog({
-        hostname,
-        dnsEnabled: CONFIG.screenshot.dns.enabled,
-        dnsProviderAvailable,
-        verification: profileVerification,
-        verificationEndpoint: CONFIG.screenshot.dns.verificationEndpoint,
-        enforceProfileMatch: CONFIG.screenshot.dns.enforceProfileMatch,
-      });
-    }
-
     await page.emulateMediaFeatures([
       {
         name: "prefers-color-scheme",
@@ -293,7 +227,6 @@ export const captureScreenshot = async (
     page.setDefaultTimeout(CONFIG.screenshot.responseTimeoutMs);
 
     const response = await page.goto(url, {
-      waitUntil: "domcontentloaded",
       timeout: CONFIG.screenshot.responseTimeoutMs,
     });
 
@@ -312,16 +245,6 @@ export const captureScreenshot = async (
       CONFIG.screenshot.redirectSettleStableMs,
     );
 
-    await new Promise((resolve) =>
-      setTimeout(resolve, CONFIG.screenshot.pageSettleMs),
-    );
-
-    await tryDismissConsentDialogs(
-      page,
-      CONFIG.screenshot.consentClickBudgetMs,
-    );
-    await applyConsentHiding(page, page.url());
-
     const status = response.status();
     const finalUrl = page.url();
 
@@ -338,6 +261,7 @@ export const captureScreenshot = async (
       await applyMediaBlur(page, CONFIG.screenshot.blurLargeMedia);
     }
 
+    await hideAdsElements(page);
     await applyPageZoom(page);
 
     // Take screenshot of the desktop viewport
@@ -398,9 +322,6 @@ export const captureScreenshot = async (
   } finally {
     if (browser) {
       await browser.close();
-    }
-    if (userDataDir) {
-      await cleanupDnsLaunchConfig(userDataDir);
     }
   }
 };

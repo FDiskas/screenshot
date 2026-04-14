@@ -17,7 +17,7 @@ export const CONFIG = {
     pageZoomPercent: 120,
     emulatedColorScheme: "dark",
     responseTimeoutMs: 15_000,
-    pageSettleMs: 1_500,
+    pageSettleMs: 3_000,
     /** Time budget to find and click common CMP “accept” buttons before CSS consent hiding. */
     consentClickBudgetMs: 8_000,
     /** Max time to wait for the URL to stop changing after `goto` (client-side redirects). */
@@ -80,21 +80,8 @@ export const CONFIG = {
       minHeightPx: 90,
       minAreaPx: 12_000,
       minIntrinsicAreaPx: 12_000,
-      blurPx: 9,
+      blurPx: 5,
       blurVisibleMediaInViewport: true,
-    },
-    dns: {
-      enabled: true,
-      /** When false, Chromium still uses configured DoH but skips JSON preflight and test.nextdns.io verification. */
-      checkDnsStatus: false,
-      verboseLogging: false,
-      providerName: "NextDNS",
-      preflightJsonEndpoint: "https://364ec7.dns.nextdns.io",
-      browserDohTemplate: "https://364ec7.dns.nextdns.io/dns-query{?dns}",
-      expectedProfileId: "364ec7",
-      verificationEndpoint: "https://test.nextdns.io",
-      enforceProfileMatch: false,
-      preflightLookupTimeoutMs: 2_000,
     },
   },
   cache: {

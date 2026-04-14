@@ -1,10 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import {
-  applyConsentHiding,
-  containsConsentToken,
-  shouldHideConsentNodeFromAttributes,
-} from "../src/lib/screenshot-consent";
-import {
   applyMediaBlur,
   shouldBlurMediaCandidate,
   type BlurConfig,
@@ -19,44 +14,6 @@ const blurConfig: BlurConfig = {
   blurPx: 18,
   blurVisibleMediaInViewport: true,
 };
-
-describe("Consent helper", () => {
-  it("matches consent token regardless of prefix/suffix", () => {
-    expect(containsConsentToken("fc-consent-root")).toBe(true);
-    expect(containsConsentToken("preconsentpost")).toBe(true);
-    expect(containsConsentToken("cookie-banner")).toBe(false);
-  });
-
-  it("detects consent-like node attributes", () => {
-    const shouldHide = shouldHideConsentNodeFromAttributes({
-      id: "foo",
-      className: "bar consent modal",
-      role: "dialog",
-    });
-
-    const shouldNotHide = shouldHideConsentNodeFromAttributes({
-      id: "cookie-banner",
-      className: "modal",
-      role: "dialog",
-    });
-
-    expect(shouldHide).toBe(true);
-    expect(shouldNotHide).toBe(false);
-  });
-
-  it("continues with evaluate when addStyleTag is blocked", async () => {
-    const addStyleTag = vi
-      .fn()
-      .mockRejectedValue(new Error("Could not load style"));
-    const evaluate = vi.fn().mockResolvedValue(undefined);
-    const page = { addStyleTag, evaluate } as any;
-
-    await applyConsentHiding(page, "https://example.com");
-
-    expect(addStyleTag).toHaveBeenCalledTimes(1);
-    expect(evaluate).toHaveBeenCalledTimes(1);
-  });
-});
 
 describe("Blur helper", () => {
   it("blurs by size threshold", () => {
