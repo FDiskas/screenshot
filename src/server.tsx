@@ -45,20 +45,26 @@ const screenshotCacheControl = `public, max-age=${screenshotMaxAgeSeconds}, immu
 const triggerMapMaxAgeMs = CONFIG.server.processingRetryMs * 4;
 
 // Periodic memory cleanup — evict stale trigger timestamps so the map does not grow forever.
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
   const now = Date.now();
-
   for (const [domain, timestamp] of recentTriggerByDomain.entries()) {
     if (now - timestamp > triggerMapMaxAgeMs) {
       recentTriggerByDomain.delete(domain);
     }
   }
-
   // Aggressive garbage collection to keep Bun memory usage low on idle
   if (typeof Bun !== "undefined" && Bun.gc) {
     Bun.gc(true);
   }
 }, triggerMapMaxAgeMs);
+
+// Cleanup interval on process exit to prevent memory leak
+const shutdown = () => {
+  clearInterval(cleanupInterval);
+};
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+process.on("exit", shutdown);
 
 // Static files
 app.use("/index.css", serveStatic({ path: "./public/index.css" }));

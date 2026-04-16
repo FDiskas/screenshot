@@ -63,7 +63,7 @@ export const CONFIG = {
       "--disable-blink-features=AutomationControlled",
       // Some sites fail headless navigation with ERR_HTTP2_PROTOCOL_ERROR.
       // Force HTTP/1.1 fallback to improve screenshot reliability.
-      "--disable-http2",
+      // "--disable-http2",
     ] as string[],
     allowedProtocol: "https://",
     resize: {
