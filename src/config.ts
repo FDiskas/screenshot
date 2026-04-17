@@ -119,7 +119,9 @@ export const CONFIG = {
     textByStatus: {
       processing: "Processing...",
       invalidUrl: "Invalid URL",
+      restricted: "Restricted Content",
       unsafeSite: "Unsafe Site",
+      dissallowed: "Dissallowed",
     },
   },
   retention: {

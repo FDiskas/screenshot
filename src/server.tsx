@@ -6,6 +6,7 @@ import type { BlankEnv, BlankInput } from "hono/types";
 import { DocsPage } from "./components/DocsPage";
 import { LandingPage } from "./components/LandingPage";
 import { Layout } from "./components/layout";
+import { PrivacyPage } from "./components/PrivacyPage";
 import { CONFIG } from "./config";
 import { dbService } from "./db";
 import { hatchet } from "./lib/hatchet";
@@ -15,6 +16,7 @@ import {
   parseScreenshotParams,
   resolveScreenshotDomain,
 } from "./lib/request";
+import { checkRobotsTxt } from "./lib/robots";
 import { checkSafety } from "./lib/safety";
 import { CleanupWorkflow } from "./lib/workflows/cleanup.workflow";
 import { PurgeWorkflow } from "./lib/workflows/purge.workflow";
@@ -114,6 +116,12 @@ app.get("/docs", (c) => {
   });
 });
 
+app.get("/privacy", (c) => {
+  return c.render(<PrivacyPage />, {
+    title: `Privacy Policy - ${CONFIG.server.defaultTitle}`,
+  });
+});
+
 const handleScreenshotRequest = async (
   c: Context<BlankEnv, "/api/screenshot" | "/api/raw", BlankInput>,
   cacheMode: "image" | "redirect",
@@ -173,10 +181,18 @@ const handleScreenshotRequest = async (
     }
   }
 
-  // 3. Safety Check
   const isSafe = await checkSafety(domainUrl);
   if (!isSafe) {
     const unsafePlaceholder = await getStatusPlaceholder(403, width, height);
+    return c.body(new Uint8Array(unsafePlaceholder), 200, {
+      "Content-Type": "image/png",
+      "Cache-Control": screenshotCacheControl,
+    });
+  }
+
+  const isRobotsAllowed = await checkRobotsTxt(domainUrl);
+  if (!isRobotsAllowed) {
+    const unsafePlaceholder = await getStatusPlaceholder(418, width, height);
     return c.body(new Uint8Array(unsafePlaceholder), 200, {
       "Content-Type": "image/png",
       "Cache-Control": screenshotCacheControl,
@@ -272,6 +288,11 @@ app.get("/api/reload", async (c) => {
   const isSafe = await checkSafety(domainUrl);
   if (!isSafe) {
     return c.json({ error: "URL is not allowed" }, 403);
+  }
+
+  const isRobotsAllowed = await checkRobotsTxt(domainUrl);
+  if (!isRobotsAllowed) {
+    return c.json({ error: "Blocked by robots.txt" }, 403);
   }
 
   recentTriggerByDomain.set(domain, Date.now());
