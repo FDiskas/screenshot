@@ -160,6 +160,145 @@ const waitForUrlToStabilize = async (
   }
 };
 
+async function configurePage(page: Page): Promise<void> {
+  // Explicitly prevent file downloads.
+  const client = await page.createCDPSession();
+  try {
+    await client
+      .send("Browser.setDownloadBehavior", {
+        behavior: "deny",
+        eventsEnabled: false,
+      })
+      .catch(() =>
+        client.send("Page.setDownloadBehavior", { behavior: "deny" }),
+      )
+      .catch(() => {
+        console.warn("Could not set download behavior");
+      });
+  } finally {
+    await client.detach().catch(() => {});
+  }
+
+  await page.setViewport({
+    width: CONFIG.screenshot.desktopViewportWidth,
+    height: CONFIG.screenshot.desktopViewportHeight,
+  });
+
+  await preparePageForAutomationCapture(page);
+
+  await page.emulateMediaFeatures([
+    {
+      name: "prefers-color-scheme",
+      value: CONFIG.screenshot.emulatedColorScheme,
+    },
+  ]);
+
+  page.setDefaultNavigationTimeout(CONFIG.screenshot.responseTimeoutMs);
+  page.setDefaultTimeout(CONFIG.screenshot.responseTimeoutMs);
+}
+
+async function navigateToPage(
+  page: Page,
+  url: string,
+  width: number,
+  height: number,
+): Promise<{ status: number; finalUrl?: string; fallbackBuffer?: Buffer }> {
+  const response = await page.goto(url, {
+    timeout: CONFIG.screenshot.responseTimeoutMs,
+  });
+
+  if (!response) {
+    return { status: 500 };
+  }
+
+  const settleMax = Math.min(
+    CONFIG.screenshot.redirectSettleMaxMs,
+    CONFIG.screenshot.responseTimeoutMs,
+  );
+
+  await waitForUrlToStabilize(
+    page,
+    settleMax,
+    CONFIG.screenshot.redirectSettleStableMs,
+  );
+
+  const status = response.status();
+  const finalUrl = page.url();
+
+  if (status !== 200) {
+    const fallbackBuffer = await createStatusFallbackBuffer(
+      width,
+      height,
+      status,
+    );
+    return { status, finalUrl, fallbackBuffer };
+  }
+
+  return { status, finalUrl };
+}
+
+function extractHostForOverlay(finalUrl: string, originalUrl: string): string {
+  try {
+    return new URL(finalUrl).hostname;
+  } catch {
+    try {
+      return new URL(originalUrl).hostname;
+    } catch {
+      return "unknown-host";
+    }
+  }
+}
+
+async function processImagePipeline(
+  rawBuffer: Buffer,
+  width: number,
+  height: number,
+  overlayHost: string,
+): Promise<Buffer> {
+  const overlaySvg = buildOverlaySvg(width, height, overlayHost);
+
+  return sharp(rawBuffer)
+    .resize(width, height, {
+      fit: CONFIG.screenshot.resize.fit,
+      position: CONFIG.screenshot.resize.position,
+      background: CONFIG.screenshot.resize.background,
+      withoutEnlargement: CONFIG.screenshot.resize.withoutEnlargement,
+    })
+    .composite([{ input: Buffer.from(overlaySvg), top: 0, left: 0 }])
+    .png()
+    .toBuffer();
+}
+
+function handlePuppeteerError(error: unknown, url: string): ScreenshotResult {
+  if (error instanceof Error) {
+    console.error(`Puppeteer error for ${url}:`, error.message);
+
+    if (
+      error.message.includes("Navigation timeout") ||
+      error.message.includes("Timeout")
+    ) {
+      return {
+        buffer: null,
+        status: 504,
+        error: `Website did not respond within ${CONFIG.screenshot.responseTimeoutMs / 1000}s`,
+      };
+    }
+
+    if (
+      error.message.includes("ERR_CERT_AUTHORITY_INVALID") ||
+      error.message.includes("SSL certificate error")
+    ) {
+      return { buffer: null, status: 495, error: "Invalid SSL certificate" };
+    }
+  }
+
+  return {
+    buffer: null,
+    status: 500,
+    error: error instanceof Error ? error.message : String(error),
+  };
+}
+
 export const captureScreenshot = async (
   options: ScreenshotOptions,
 ): Promise<ScreenshotResult> => {
@@ -171,8 +310,8 @@ export const captureScreenshot = async (
 
   let browser: Browser | null = null;
   const userDataDir: string | null = null;
+
   try {
-    // Only allow HTTPS
     if (!url.startsWith(CONFIG.screenshot.allowedProtocol)) {
       return {
         buffer: null,
@@ -192,75 +331,18 @@ export const captureScreenshot = async (
     });
 
     const page = await browser.newPage();
-
     await applySmartBlocker(page);
+    await configurePage(page);
 
-    // Explicitly prevent file downloads.
-    // CDPSession must be detached after use — it holds native transport handles
-    // that Puppeteer does not automatically release when the page closes.
-    const client = await page.createCDPSession();
-    try {
-      await client
-        .send("Browser.setDownloadBehavior", {
-          behavior: "deny",
-          eventsEnabled: false,
-        })
-        .catch(() =>
-          client.send("Page.setDownloadBehavior", { behavior: "deny" }),
-        )
-        .catch(() => {
-          console.warn("Could not set download behavior");
-        });
-    } finally {
-      await client.detach().catch(() => {});
-    }
-
-    await page.setViewport({
-      width: CONFIG.screenshot.desktopViewportWidth,
-      height: CONFIG.screenshot.desktopViewportHeight,
-    });
-
-    await preparePageForAutomationCapture(page);
-
-    await page.emulateMediaFeatures([
-      {
-        name: "prefers-color-scheme",
-        value: CONFIG.screenshot.emulatedColorScheme,
-      },
-    ]);
-
-    page.setDefaultNavigationTimeout(CONFIG.screenshot.responseTimeoutMs);
-    page.setDefaultTimeout(CONFIG.screenshot.responseTimeoutMs);
-
-    const response = await page.goto(url, {
-      timeout: CONFIG.screenshot.responseTimeoutMs,
-    });
-
-    if (!response) {
-      return { buffer: null, status: 500, error: "Failed to load page" };
-    }
-
-    const settleMax = Math.min(
-      CONFIG.screenshot.redirectSettleMaxMs,
-      CONFIG.screenshot.responseTimeoutMs,
-    );
-
-    await waitForUrlToStabilize(
+    const { status, finalUrl, fallbackBuffer } = await navigateToPage(
       page,
-      settleMax,
-      CONFIG.screenshot.redirectSettleStableMs,
+      url,
+      width,
+      height,
     );
-
-    const status = response.status();
-    const finalUrl = page.url();
 
     if (status !== 200) {
-      const fallbackBuffer = await createStatusFallbackBuffer(
-        width,
-        height,
-        status,
-      );
-      return { buffer: fallbackBuffer, status, finalUrl };
+      return { buffer: fallbackBuffer || null, status, finalUrl };
     }
 
     if (CONFIG.screenshot.blurLargeMedia.enabled) {
@@ -270,69 +352,18 @@ export const captureScreenshot = async (
     await hideAdsElements(page);
     await applyPageZoom(page);
 
-    // Take screenshot of the desktop viewport
     const rawBuffer = (await page.screenshot({ type: "png" })) as Buffer;
-
-    const overlayHost = (() => {
-      try {
-        return new URL(finalUrl).hostname;
-      } catch {
-        try {
-          return new URL(url).hostname;
-        } catch {
-          return "unknown-host";
-        }
-      }
-    })();
-
-    const overlaySvg = buildOverlaySvg(width, height, overlayHost);
-
-    // Chain resize + composite in a single Sharp pipeline.
-    // This avoids holding rawBuffer + resizedBuffer + finalBuffer in memory
-    // simultaneously (~1–2 MB peak saving per job).
-    const finalBuffer = await sharp(rawBuffer)
-      .resize(width, height, {
-        fit: CONFIG.screenshot.resize.fit,
-        position: CONFIG.screenshot.resize.position,
-        background: CONFIG.screenshot.resize.background,
-        withoutEnlargement: CONFIG.screenshot.resize.withoutEnlargement,
-      })
-      .composite([{ input: Buffer.from(overlaySvg), top: 0, left: 0 }])
-      .png()
-      .toBuffer();
+    const overlayHost = extractHostForOverlay(finalUrl || url, url);
+    const finalBuffer = await processImagePipeline(
+      rawBuffer,
+      width,
+      height,
+      overlayHost,
+    );
 
     return { buffer: finalBuffer, status, finalUrl };
   } catch (error) {
-    if (error instanceof Error) {
-      console.error(`Puppeteer error for ${url}:`, error.message);
-    }
-
-    if (
-      error instanceof Error &&
-      (error.message.includes("Navigation timeout") ||
-        error.message.includes("Timeout"))
-    ) {
-      return {
-        buffer: null,
-        status: 504,
-        error: `Website did not respond within ${CONFIG.screenshot.responseTimeoutMs / 1000}s`,
-      };
-    }
-
-    // Handle certificate errors specifically if possible
-    if (
-      error instanceof Error &&
-      (error.message.includes("ERR_CERT_AUTHORITY_INVALID") ||
-        error.message.includes("SSL certificate error"))
-    ) {
-      return { buffer: null, status: 495, error: "Invalid SSL certificate" };
-    }
-
-    return {
-      buffer: null,
-      status: 500,
-      error: error instanceof Error ? error.message : String(error),
-    };
+    return handlePuppeteerError(error, url);
   } finally {
     if (browser) {
       await browser.close();

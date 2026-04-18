@@ -3,7 +3,7 @@ import { CONFIG } from "../config";
 
 export const PrivacyPage: FC = () => {
   const minReloadDays = Math.ceil(
-    CONFIG.server.minReloadAgeMs / (24 * 60 * 60 * 1000)
+    CONFIG.server.minReloadAgeMs / (24 * 60 * 60 * 1000),
   );
   const retentionMonths = CONFIG.retention.months;
 
@@ -38,7 +38,9 @@ export const PrivacyPage: FC = () => {
               We automatically attempt to block advertisements to provide clean
               screenshots.
             </li>
-            <li>We strictly capture screenshots on child-safe websites only.</li>
+            <li>
+              We strictly capture screenshots on child-safe websites only.
+            </li>
             <li>We automatically close common consent and cookie pop-ups.</li>
             <li>
               We proactively blur larger images in the screenshots to protect
@@ -70,7 +72,8 @@ export const PrivacyPage: FC = () => {
           <p>
             The service may be modified, suspended, or closed entirely at any
             time without prior information or notification. We provide this
-            service on an "as is" and "as available" basis without any warranties.
+            service on an "as is" and "as available" basis without any
+            warranties.
           </p>
         </section>
 
@@ -123,10 +126,19 @@ export const PrivacyPage: FC = () => {
           <p>
             We respect standard web scraping etiquette. Before taking a
             screenshot of a homepage, our automated system checks the website's{" "}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-sm text-foreground">robots.txt</code> file. If the file explicitly disallows
-            crawling for the root path (<code className="bg-muted px-1.5 py-0.5 rounded text-sm text-foreground">/</code>) for all agents (
-            <code className="bg-muted px-1.5 py-0.5 rounded text-sm text-foreground">User-agent: *</code>) or specifically for our service, we will
-            safely abort the capture and return a placeholder image instead.
+            <code className="bg-muted px-1.5 py-0.5 rounded text-sm text-foreground">
+              robots.txt
+            </code>{" "}
+            file. If the file explicitly disallows crawling for the root path (
+            <code className="bg-muted px-1.5 py-0.5 rounded text-sm text-foreground">
+              /
+            </code>
+            ) for all agents (
+            <code className="bg-muted px-1.5 py-0.5 rounded text-sm text-foreground">
+              User-agent: *
+            </code>
+            ) or specifically for our service, we will safely abort the capture
+            and return a placeholder image instead.
           </p>
         </section>
       </div>

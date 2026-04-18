@@ -57,7 +57,7 @@ export const checkRobotsTxt = async (url: string): Promise<boolean> => {
     }
 
     return isAllowed;
-  } catch (error) {
+  } catch (_error) {
     // Network errors, timeouts, etc.
     return true;
   }

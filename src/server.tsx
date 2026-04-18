@@ -92,29 +92,26 @@ app.use(
 // Routes
 app.get("/", (c) => {
   const latest = dbService.getLatest();
-  // Better origin detection
-  const proto =
-    c.req.header("x-forwarded-proto") ||
-    new URL(c.req.url).protocol.replace(":", "");
-  const host = c.req.header("x-forwarded-host") || c.req.header("host");
-  const origin = host ? `${proto}://${host}` : new URL(c.req.url).origin;
-
+  const origin = getRequestOrigin(c);
   return c.render(<LandingPage latest={latest} origin={origin} />, {
     title: CONFIG.server.homeTitle,
   });
 });
 
 app.get("/docs", (c) => {
-  const proto =
-    c.req.header("x-forwarded-proto") ||
-    new URL(c.req.url).protocol.replace(":", "");
-  const host = c.req.header("x-forwarded-host") || c.req.header("host");
-  const origin = host ? `${proto}://${host}` : new URL(c.req.url).origin;
-
+  const origin = getRequestOrigin(c);
   return c.render(<DocsPage origin={origin} />, {
     title: CONFIG.server.docsTitle,
   });
 });
+
+function getRequestOrigin(c: Context): string {
+  const proto =
+    c.req.header("x-forwarded-proto") ||
+    new URL(c.req.url).protocol.replace(":", "");
+  const host = c.req.header("x-forwarded-host") || c.req.header("host");
+  return host ? `${proto}://${host}` : new URL(c.req.url).origin;
+}
 
 app.get("/privacy", (c) => {
   return c.render(<PrivacyPage />, {
@@ -122,89 +119,57 @@ app.get("/privacy", (c) => {
   });
 });
 
-const handleScreenshotRequest = async (
-  c: Context<BlankEnv, "/api/screenshot" | "/api/raw", BlankInput>,
+async function returnStatusPlaceholder(
+  c: Context,
+  status: number,
+  width: number,
+  height: number,
+  cacheControl: string,
+) {
+  const buffer = await getStatusPlaceholder(status, width, height);
+  return c.body(new Uint8Array(buffer), 200, {
+    "Content-Type": "image/png",
+    "Cache-Control": cacheControl,
+  });
+}
+
+async function handleCacheHit(
+  c: Context,
+  url: string,
+  domain: string,
   cacheMode: "image" | "redirect",
-) => {
-  const params = parseScreenshotParams(
-    c.req.query("url"),
-    c.req.query("width"),
-    c.req.query("height"),
-  );
-
-  if (!params) {
-    return c.text("URL is required", 400);
-  }
-
-  const { url, width, height } = params;
-
-  // 1. Basic validation
-  if (!isValidScreenshotUrl(url)) {
-    const errorBuffer = await getStatusPlaceholder(400, width, height);
-    return c.body(new Uint8Array(errorBuffer), 200, {
-      "Content-Type": "image/png",
-      "Cache-Control": screenshotCacheControl,
-    });
-  }
-
-  const resolved = resolveScreenshotDomain(url);
-  if (!resolved) {
-    const errorBuffer = await getStatusPlaceholder(400, width, height);
-    return c.body(new Uint8Array(errorBuffer), 200, {
-      "Content-Type": "image/png",
-      "Cache-Control": screenshotCacheControl,
-    });
-  }
-
-  const { domain, domainUrl } = resolved;
-
-  // 2. Check Cache
+) {
   const existing = dbService.getByUrl(url);
-  if (existing) {
-    if (existing.status === 200 && existing.image_path) {
-      recentTriggerByDomain.delete(domain);
-      if (cacheMode === "redirect") {
-        const response = c.redirect(existing.image_path, 302);
-        response.headers.set("Cache-Control", screenshotCacheControl);
-        return response;
-      }
-
-      try {
-        const fileBuffer = await readFile(`./public${existing.image_path}`);
-        return c.body(new Uint8Array(fileBuffer), 200, {
-          "Content-Type": "image/png",
-          "Cache-Control": screenshotCacheControl,
-        });
-      } catch {
-        // File does not exist or cannot be read; continue to recapture path.
-      }
-    }
+  if (!existing || existing.status !== 200 || !existing.image_path) {
+    return null;
   }
 
-  const isSafe = await checkSafety(domainUrl);
-  if (!isSafe) {
-    const unsafePlaceholder = await getStatusPlaceholder(403, width, height);
-    return c.body(new Uint8Array(unsafePlaceholder), 200, {
+  recentTriggerByDomain.delete(domain);
+  if (cacheMode === "redirect") {
+    const response = c.redirect(existing.image_path, 302);
+    response.headers.set("Cache-Control", screenshotCacheControl);
+    return response;
+  }
+
+  try {
+    const fileBuffer = await readFile(`./public${existing.image_path}`);
+    return c.body(new Uint8Array(fileBuffer), 200, {
       "Content-Type": "image/png",
       "Cache-Control": screenshotCacheControl,
     });
+  } catch {
+    return null;
   }
+}
 
-  const isRobotsAllowed = await checkRobotsTxt(domainUrl);
-  if (!isRobotsAllowed) {
-    const unsafePlaceholder = await getStatusPlaceholder(418, width, height);
-    return c.body(new Uint8Array(unsafePlaceholder), 200, {
-      "Content-Type": "image/png",
-      "Cache-Control": screenshotCacheControl,
-    });
-  }
-
-  // 4. Async process and return placeholder
+function triggerHatchetEventDebounced(
+  domain: string,
+  domainUrl: string,
+  width: number,
+  height: number,
+) {
   const now = Date.now();
   const lastTrigger = recentTriggerByDomain.get(domain) || 0;
-  // Debounce only: avoid enqueueing duplicate events while a previous trigger is still "fresh".
-  // (Previously a second "pending" window blocked new events for 4× this interval — users saw 202
-  // placeholders but no new Hatchet task for up to two minutes.)
   const shouldTrigger =
     lastTrigger === 0 || now - lastTrigger > CONFIG.server.processingRetryMs;
 
@@ -226,13 +191,86 @@ const handleScreenshotRequest = async (
       `[screenshot] Skipping duplicate Hatchet event for ${domain}; next eligible in ~${Math.max(0, Math.ceil(waitMs / 1000))}s`,
     );
   }
+}
 
-  const processingPlaceholder = await getStatusPlaceholder(202, width, height);
-  return c.body(new Uint8Array(processingPlaceholder), 200, {
-    "Content-Type": "image/png",
-    Refresh: String(CONFIG.server.processingRefreshSeconds),
-    "Cache-Control": "no-store, no-cache, must-revalidate",
-  });
+const handleScreenshotRequest = async (
+  c: Context<BlankEnv, "/api/screenshot" | "/api/raw", BlankInput>,
+  cacheMode: "image" | "redirect",
+) => {
+  const params = parseScreenshotParams(
+    c.req.query("url"),
+    c.req.query("width"),
+    c.req.query("height"),
+  );
+
+  if (!params) {
+    return c.text("URL is required", 400);
+  }
+
+  const { url, width, height } = params;
+
+  if (!isValidScreenshotUrl(url)) {
+    return returnStatusPlaceholder(
+      c,
+      400,
+      width,
+      height,
+      screenshotCacheControl,
+    );
+  }
+
+  const resolved = resolveScreenshotDomain(url);
+  if (!resolved) {
+    return returnStatusPlaceholder(
+      c,
+      400,
+      width,
+      height,
+      screenshotCacheControl,
+    );
+  }
+
+  const { domain, domainUrl } = resolved;
+
+  const cachedResponse = await handleCacheHit(c, url, domain, cacheMode);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  if (!(await checkSafety(domainUrl))) {
+    return returnStatusPlaceholder(
+      c,
+      403,
+      width,
+      height,
+      screenshotCacheControl,
+    );
+  }
+
+  if (!(await checkRobotsTxt(domainUrl))) {
+    return returnStatusPlaceholder(
+      c,
+      418,
+      width,
+      height,
+      screenshotCacheControl,
+    );
+  }
+
+  triggerHatchetEventDebounced(domain, domainUrl, width, height);
+
+  const response = await returnStatusPlaceholder(
+    c,
+    202,
+    width,
+    height,
+    "no-store, no-cache, must-revalidate",
+  );
+  response.headers.set(
+    "Refresh",
+    String(CONFIG.server.processingRefreshSeconds),
+  );
+  return response;
 };
 
 app.get("/api/screenshot", async (c) => {
@@ -242,6 +280,27 @@ app.get("/api/screenshot", async (c) => {
 app.get("/api/raw", async (c) => {
   return handleScreenshotRequest(c, "redirect");
 });
+
+async function enqueueReloadTask(
+  domain: string,
+  domainUrl: string,
+  width: number,
+  height: number,
+): Promise<string | null> {
+  recentTriggerByDomain.set(domain, Date.now());
+  try {
+    await hatchet.events.push(CONFIG.server.screenshotEventName, {
+      url: domainUrl,
+      width,
+      height,
+    });
+    return null;
+  } catch (err) {
+    recentTriggerByDomain.delete(domain);
+    console.error("Hatchet trigger error:", err);
+    return "Failed to enqueue regeneration task";
+  }
+}
 
 app.get("/api/reload", async (c) => {
   const params = parseScreenshotParams(
@@ -285,28 +344,17 @@ app.get("/api/reload", async (c) => {
     );
   }
 
-  const isSafe = await checkSafety(domainUrl);
-  if (!isSafe) {
+  if (!(await checkSafety(domainUrl))) {
     return c.json({ error: "URL is not allowed" }, 403);
   }
 
-  const isRobotsAllowed = await checkRobotsTxt(domainUrl);
-  if (!isRobotsAllowed) {
+  if (!(await checkRobotsTxt(domainUrl))) {
     return c.json({ error: "Blocked by robots.txt" }, 403);
   }
 
-  recentTriggerByDomain.set(domain, Date.now());
-
-  try {
-    await hatchet.events.push(CONFIG.server.screenshotEventName, {
-      url: domainUrl,
-      width,
-      height,
-    });
-  } catch (err) {
-    recentTriggerByDomain.delete(domain);
-    console.error("Hatchet trigger error:", err);
-    return c.json({ error: "Failed to enqueue regeneration task" }, 500);
+  const error = await enqueueReloadTask(domain, domainUrl, width, height);
+  if (error) {
+    return c.json({ error }, 500);
   }
 
   return c.json({ status: "queued", url: domainUrl, width, height });
