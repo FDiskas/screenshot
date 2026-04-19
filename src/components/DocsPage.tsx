@@ -62,7 +62,7 @@ async function captureWithPolling(url, imgElement) {
               Documentation
             </span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/60">
             Getting Started with{" "}
             <span className="text-primary italic">SnapService</span>
           </h1>
@@ -143,7 +143,8 @@ async function captureWithPolling(url, imgElement) {
                         number
                       </td>
                       <td className="px-6 py-4">
-                        Viewport width (default: {CONFIG.screenshot.defaultWidth})
+                        Viewport width (default:{" "}
+                        {CONFIG.screenshot.defaultWidth})
                       </td>
                     </tr>
                     <tr>
@@ -154,7 +155,8 @@ async function captureWithPolling(url, imgElement) {
                         number
                       </td>
                       <td className="px-6 py-4">
-                        Viewport height (default: {CONFIG.screenshot.defaultHeight})
+                        Viewport height (default:{" "}
+                        {CONFIG.screenshot.defaultHeight})
                       </td>
                     </tr>
                   </tbody>
@@ -169,7 +171,15 @@ async function captureWithPolling(url, imgElement) {
               </h2>
               <div className="bg-card border rounded-2xl p-6 shadow-sm">
                 <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                  For security and performance, only specific viewport resolutions are supported. If only one dimension is provided, the API will automatically infer the other. If no match is found, it will default to <strong>{CONFIG.screenshot.defaultWidth}x{CONFIG.screenshot.defaultHeight}</strong>.
+                  For security and performance, only specific viewport
+                  resolutions are supported. If only one dimension is provided,
+                  the API will automatically infer the other. If no match is
+                  found, it will default to{" "}
+                  <strong>
+                    {CONFIG.screenshot.defaultWidth}x
+                    {CONFIG.screenshot.defaultHeight}
+                  </strong>
+                  .
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {CONFIG.screenshot.allowedResolutions.map((res) => (

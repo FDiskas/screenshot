@@ -309,6 +309,9 @@ export const captureScreenshot = async (
   } = options;
 
   let browser: Browser | null = null;
+  let page: Page | null = null;
+  let rawBuffer: Buffer | null = null;
+  let finalBuffer: Buffer | null = null;
   const userDataDir: string | null = null;
 
   try {
@@ -330,7 +333,7 @@ export const captureScreenshot = async (
       ...(userDataDir ? { userDataDir } : {}),
     });
 
-    const page = await browser.newPage();
+    page = await browser.newPage();
     await applySmartBlocker(page);
     await configurePage(page);
 
@@ -352,21 +355,36 @@ export const captureScreenshot = async (
     await hideAdsElements(page);
     await applyPageZoom(page);
 
-    const rawBuffer = (await page.screenshot({ type: "png" })) as Buffer;
+    rawBuffer = (await page.screenshot({ type: "png" })) as Buffer;
     const overlayHost = extractHostForOverlay(finalUrl || url, url);
-    const finalBuffer = await processImagePipeline(
+    finalBuffer = await processImagePipeline(
       rawBuffer,
       width,
       height,
       overlayHost,
     );
 
-    return { buffer: finalBuffer, status, finalUrl };
+    // Release memory ASAP
+    rawBuffer = null;
+    const result = { buffer: finalBuffer, status, finalUrl };
+    finalBuffer = null;
+    return result;
   } catch (error) {
     return handlePuppeteerError(error, url);
   } finally {
-    if (browser) {
-      await browser.close();
+    if (page) {
+      try {
+        await page.close();
+      } catch {}
+      page = null;
     }
+    if (browser) {
+      try {
+        await browser.close();
+      } catch {}
+      browser = null;
+    }
+    rawBuffer = null;
+    finalBuffer = null;
   }
 };
