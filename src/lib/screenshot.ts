@@ -314,6 +314,11 @@ export const captureScreenshot = async (
   let finalBuffer: Buffer | null = null;
   const userDataDir: string | null = null;
 
+  let memBefore: NodeJS.MemoryUsage | null = null;
+  if (typeof process !== "undefined" && process.memoryUsage) {
+    memBefore = process.memoryUsage();
+    console.log("[screenshot] mem before", memBefore);
+  }
   try {
     if (!url.startsWith(CONFIG.screenshot.allowedProtocol)) {
       return {
@@ -368,6 +373,20 @@ export const captureScreenshot = async (
     rawBuffer = null;
     const result = { buffer: finalBuffer, status, finalUrl };
     finalBuffer = null;
+
+    // Force global GC if available (Bun, Node)
+    if (typeof Bun !== "undefined" && Bun.gc) {
+      Bun.gc(true);
+      console.log("[screenshot] Bun.gc called");
+    } else if (global && typeof global.gc === "function") {
+      global.gc();
+      console.log("[screenshot] Node global.gc called");
+    }
+
+    if (typeof process !== "undefined" && process.memoryUsage) {
+      const memAfter = process.memoryUsage();
+      console.log("[screenshot] mem after", memAfter);
+    }
     return result;
   } catch (error) {
     return handlePuppeteerError(error, url);
