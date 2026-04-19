@@ -16,6 +16,8 @@ export interface DomainShot {
   domain: string;
   imagePath: string;
   createdAt: string;
+  width: number;
+  height: number;
 }
 
 const toWebPath = (filePath: string): string => {
@@ -42,7 +44,9 @@ const listFiles = (dirPath: string): string[] => {
   }
 };
 
-const parseCreatedAt = (filename: string): Date | undefined => {
+const parseScreenshotMeta = (
+  filename: string,
+): { createdAt: Date; width: number; height: number } | undefined => {
   const match = filename.match(CONFIG.cache.filenameDatePattern);
   if (!match) {
     return undefined;
@@ -54,7 +58,15 @@ const parseCreatedAt = (filename: string): Date | undefined => {
   if (Number.isNaN(date.getTime())) {
     return undefined;
   }
-  return date;
+
+  const width = match[2]
+    ? parseInt(match[2], 10)
+    : CONFIG.screenshot.defaultWidth;
+  const height = match[3]
+    ? parseInt(match[3], 10)
+    : CONFIG.screenshot.defaultHeight;
+
+  return { createdAt: date, width, height };
 };
 
 const isExpired = (createdAt: Date): boolean => {
@@ -103,7 +115,12 @@ export const cacheService = {
     return join(tld, domain);
   },
 
-  getPath: (domain: string, createdAt: Date): string => {
+  getPath: (
+    domain: string,
+    createdAt: Date,
+    width: number,
+    height: number,
+  ): string => {
     const token = encodeTimestamp(createdAt);
     const unique = createHash("sha1")
       .update(`${domain}-${Date.now()}-${Math.random()}`)
@@ -111,13 +128,23 @@ export const cacheService = {
       .slice(0, 8);
     return join(
       cacheService.getDomainRelativeDir(domain),
-      `${token}-${unique}${CONFIG.cache.imageExtension}`,
+      `${token}-${unique}-${width}x${height}${CONFIG.cache.imageExtension}`,
     );
   },
 
-  save: (url: string, buffer: Buffer): string => {
+  save: (
+    url: string,
+    width: number,
+    height: number,
+    buffer: Buffer,
+  ): string => {
     const domain = cacheService.getDomain(url);
-    const relativePath = cacheService.getPath(domain, new Date());
+    const relativePath = cacheService.getPath(
+      domain,
+      new Date(),
+      width,
+      height,
+    );
     const fullPath = join(CACHE_DIR, relativePath);
 
     mkdirSync(dirname(fullPath), { recursive: true });
@@ -126,7 +153,11 @@ export const cacheService = {
     return `/screenshots/${relativePath.replace(/\\/g, "/")}`;
   },
 
-  getLatestForDomain: (domain: string): DomainShot | null => {
+  getLatestForDomain: (
+    domain: string,
+    width?: number,
+    height?: number,
+  ): DomainShot | null => {
     const domainDir = join(
       CACHE_DIR,
       cacheService.getDomainRelativeDir(domain),
@@ -134,19 +165,25 @@ export const cacheService = {
     const files = listFiles(domainDir).filter((name) =>
       name.endsWith(CONFIG.cache.imageExtension),
     );
-    const valid: { filename: string; createdAt: Date }[] = [];
+    const valid: {
+      filename: string;
+      meta: { createdAt: Date; width: number; height: number };
+    }[] = [];
 
     for (const filename of files) {
-      const parsed = parseCreatedAt(filename);
-      if (!parsed) {
+      const meta = parseScreenshotMeta(filename);
+      if (!meta) {
         rmSync(join(domainDir, filename), { force: true });
         continue;
       }
-      if (isExpired(parsed)) {
+      if (isExpired(meta.createdAt)) {
         rmSync(join(domainDir, filename), { force: true });
         continue;
       }
-      valid.push({ filename, createdAt: parsed });
+      if (width && height && (meta.width !== width || meta.height !== height)) {
+        continue;
+      }
+      valid.push({ filename, meta });
     }
 
     if (valid.length === 0) {
@@ -154,7 +191,9 @@ export const cacheService = {
       return null;
     }
 
-    valid.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    valid.sort(
+      (a, b) => b.meta.createdAt.getTime() - a.meta.createdAt.getTime(),
+    );
     const latest = valid[0];
     if (!latest) {
       return null;
@@ -162,7 +201,9 @@ export const cacheService = {
 
     return {
       domain,
-      createdAt: latest.createdAt.toISOString(),
+      createdAt: latest.meta.createdAt.toISOString(),
+      width: latest.meta.width,
+      height: latest.meta.height,
       imagePath: `/screenshots/${toWebPath(join(cacheService.getDomainRelativeDir(domain), latest.filename))}`,
     };
   },
@@ -204,8 +245,8 @@ export const cacheService = {
         );
         for (const filename of files) {
           const filePath = join(domainDir, filename);
-          const parsed = parseCreatedAt(filename);
-          const createdAt = parsed ?? statSync(filePath).mtime;
+          const parsed = parseScreenshotMeta(filename);
+          const createdAt = parsed?.createdAt ?? statSync(filePath).mtime;
           if (isExpired(createdAt)) {
             rmSync(filePath, { force: true });
             deleted += 1;

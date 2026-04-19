@@ -137,9 +137,11 @@ async function handleCacheHit(
   c: Context,
   url: string,
   domain: string,
+  width: number,
+  height: number,
   cacheMode: "image" | "redirect",
 ) {
-  const existing = dbService.getByUrl(url);
+  const existing = dbService.getByUrl(url, width, height);
   if (!existing || existing.status !== 200 || !existing.image_path) {
     return null;
   }
@@ -232,7 +234,14 @@ const handleScreenshotRequest = async (
 
   const { domain, domainUrl } = resolved;
 
-  const cachedResponse = await handleCacheHit(c, url, domain, cacheMode);
+  const cachedResponse = await handleCacheHit(
+    c,
+    url,
+    domain,
+    width,
+    height,
+    cacheMode,
+  );
   if (cachedResponse) {
     return cachedResponse;
   }
@@ -326,7 +335,7 @@ app.get("/api/reload", async (c) => {
 
   const { domain, domainUrl } = resolved;
 
-  const existing = dbService.getByUrl(url);
+  const existing = dbService.getByUrl(url, width, height);
   if (!existing) {
     return c.json({ error: "No cached image found for this URL" }, 404);
   }

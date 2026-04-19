@@ -43,8 +43,10 @@ describe("Cache Service", () => {
     const path = cacheService.getPath(
       "example.com",
       new Date("2026-04-07T00:00:00Z"),
+      1920,
+      1080
     );
     expect(path).toContain("example.com");
-    expect(path).toMatch(/\.png$/);
+    expect(path).toMatch(/-1920x1080\.png$/);
   });
 });
