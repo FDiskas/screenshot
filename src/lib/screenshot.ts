@@ -255,7 +255,7 @@ async function processImagePipeline(
   height: number,
   overlayHost: string,
 ): Promise<Buffer> {
-  const overlaySvg = buildOverlaySvg(width, height, overlayHost);
+  const overlaySvg = Buffer.from(buildOverlaySvg(width, height, overlayHost));
 
   return sharp(rawBuffer)
     .resize(width, height, {
@@ -264,8 +264,8 @@ async function processImagePipeline(
       background: CONFIG.screenshot.resize.background,
       withoutEnlargement: CONFIG.screenshot.resize.withoutEnlargement,
     })
-    .composite([{ input: Buffer.from(overlaySvg), top: 0, left: 0 }])
-    .png()
+    .composite([{ input: overlaySvg, top: 0, left: 0 }])
+    .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toBuffer();
 }
 

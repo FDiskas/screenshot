@@ -87,4 +87,8 @@ _The service will start at `http://localhost:3001`._
 
 ---
 
-Created with ❤️ by Antigravity.
+## 🛠️ Development Notes
+
+To run this on Docker - I usually do like this
+
+> apt-get update && apt-get install -y libjemalloc-dev libgbm1 libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2 fonts-liberation && npm install -g bun && bun install && bun x puppeteer browsers install chrome

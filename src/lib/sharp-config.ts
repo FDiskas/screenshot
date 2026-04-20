@@ -15,3 +15,8 @@ if (typeof sharp.concurrency === "function") {
   // Single libvips worker thread is sufficient for a 1-slot Hatchet worker.
   sharp.concurrency(1);
 }
+
+// Enable SIMD optimizations if available, for better performance on supported platforms.
+if (typeof sharp.simd === "function") {
+  sharp.simd(true);
+}
