@@ -75,7 +75,11 @@ describe("parseScreenshotParams", () => {
   });
 
   it("infers width when only allowed height is provided", () => {
-    const result = parseScreenshotParams("https://example.com", undefined, "800");
+    const result = parseScreenshotParams(
+      "https://example.com",
+      undefined,
+      "800",
+    );
     expect(result?.width).toBe(360);
     expect(result?.height).toBe(800);
   });

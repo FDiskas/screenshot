@@ -139,23 +139,29 @@ const waitForUrlToStabilize = async (
   let stableSince = Date.now();
 
   while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 100));
     const current = page.url();
     if (current !== lastUrl) {
       lastUrl = current;
       stableSince = Date.now();
-      try {
-        await page.waitForNavigation({
-          waitUntil: "networkidle0",
-          timeout: Math.max(500, deadline - Date.now()),
-        });
-      } catch {
-        // Navigation may already have completed.
-      }
-      lastUrl = page.url();
-      stableSince = Date.now();
-    } else if (Date.now() - stableSince >= stableMs) {
-      return;
+    }
+
+    if (Date.now() - stableSince >= stableMs) {
+      break;
+    }
+
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  // After URL is stable, ensure network is also idle if we have time left
+  const remaining = deadline - Date.now();
+  if (remaining > 500) {
+    try {
+      await page.waitForNetworkIdle({
+        idleTime: 500,
+        timeout: Math.min(2000, remaining),
+      });
+    } catch {
+      // Best effort
     }
   }
 };

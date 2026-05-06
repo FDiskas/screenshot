@@ -44,7 +44,7 @@ const listFiles = (dirPath: string): string[] => {
   }
 };
 
-const parseScreenshotMeta = (
+export const parseScreenshotMeta = (
   filename: string,
 ): { createdAt: Date; width: number; height: number } | undefined => {
   const match = filename.match(CONFIG.cache.filenameDatePattern);
@@ -69,7 +69,7 @@ const parseScreenshotMeta = (
   return { createdAt: date, width, height };
 };
 
-const isExpired = (createdAt: Date): boolean => {
+export const isExpired = (createdAt: Date): boolean => {
   return Date.now() - createdAt.getTime() > CONFIG.cache.maxAgeMs;
 };
 
@@ -123,7 +123,7 @@ export const cacheService = {
   ): string => {
     const token = encodeTimestamp(createdAt);
     const unique = createHash("sha1")
-      .update(`${domain}-${Date.now()}-${Math.random()}`)
+      .update(`${domain}-${width}x${height}`)
       .digest("hex")
       .slice(0, 8);
     return join(
