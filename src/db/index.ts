@@ -49,9 +49,13 @@ export const dbService = {
     return cacheService.listLatestByDomain(limit).map(toRecord);
   },
 
-  getByUrl: (url: string): ScreenshotRecord | undefined => {
+  getByUrl: (
+    url: string,
+    width?: number,
+    height?: number,
+  ): ScreenshotRecord | undefined => {
     const domain = cacheService.getDomain(url);
-    const latest = cacheService.getLatestForDomain(domain);
+    const latest = cacheService.getLatestForDomain(domain, width, height);
     return latest ? toRecord(latest) : undefined;
   },
 

@@ -33,7 +33,12 @@ ScreenshotWorkflow.task({
       const result = await captureScreenshot({ url: domainUrl, width, height });
 
       if (result.buffer) {
-        const imagePath = cacheService.save(domainUrl, result.buffer);
+        const imagePath = cacheService.save(
+          domainUrl,
+          width,
+          height,
+          result.buffer,
+        );
         if (result.status === 200) {
           console.log(`Successfully captured screenshot for ${domainUrl}`);
         } else {
@@ -48,7 +53,12 @@ ScreenshotWorkflow.task({
           height,
           result.status,
         );
-        const imagePath = cacheService.save(domainUrl, fallbackBuffer);
+        const imagePath = cacheService.save(
+          domainUrl,
+          width,
+          height,
+          fallbackBuffer,
+        );
         console.log(
           `Screenshot failed for ${domainUrl} with status ${result.status}, saved fallback placeholder`,
         );

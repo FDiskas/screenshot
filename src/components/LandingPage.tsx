@@ -33,7 +33,7 @@ export const LandingPage: FC<{
             <span className="bg-primary px-2 py-0.5 rounded-full text-primary-foreground mr-2 text-[10px] uppercase font-bold tracking-widest">
               New
             </span>
-            <span>Instant domain-level screenshot caching enabled</span>
+            <span>Instant domain-level screenshots</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 max-w-4xl text-balance bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/60">
             Web Screenshots, <br /> Delivered{" "}
@@ -145,7 +145,7 @@ export const LandingPage: FC<{
               id="api-preview-sample"
               className="block bg-background/50 p-4 rounded-lg text-xs md:text-sm text-primary overflow-x-auto whitespace-nowrap"
             >
-              GET {origin}/api/screenshot?url=https://yoursite.com
+              GET {origin}/api/screenshot?url=https://example.com
             </code>
           </div>
 
@@ -184,7 +184,7 @@ export const LandingPage: FC<{
 
           const updateApiPreview = (rawUrl) => {
             if (!apiPreview) return;
-            const normalizedUrl = (rawUrl || '').trim() || 'https://yoursite.com';
+            const normalizedUrl = (rawUrl || '').trim() || 'https://example.com';
             const encodedUrl = encodeURIComponent(normalizedUrl);
             apiPreview.textContent = 'GET ' + previewOrigin + '/api/screenshot?url=' + encodedUrl;
           };
@@ -245,7 +245,7 @@ export const LandingPage: FC<{
             </p>
           </div>
           <p className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full font-mono">
-            LIVE FEED • UPDATED JUST NOW
+            FEED
           </p>
         </div>
 

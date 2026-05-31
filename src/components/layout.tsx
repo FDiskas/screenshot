@@ -60,7 +60,7 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
               </span>
             </a>
             <nav className="flex items-center gap-6">
-              <a
+              {/* <a
                 href="/"
                 className="text-sm font-medium hover:text-primary transition-colors"
               >
@@ -78,7 +78,7 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
               >
                 Gallery
               </a>
-              <div className="h-8 w-px bg-border mx-2" />
+              <div className="h-8 w-px bg-border mx-2" /> */}
 
               <button
                 type="button"
@@ -105,15 +105,17 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
               © 2026 SnapService. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary transition-colors">
-                Privacy
-              </a>
-              <a href="#" className="hover:text-primary transition-colors">
-                Terms
+              <a
+                href="/privacy"
+                className="hover:text-primary transition-colors"
+              >
+                Privacy & Terms
               </a>
               <a
                 href="https://is.coders.lt"
                 className="hover:text-primary transition-colors"
+                target="_blank"
+                rel="noopener noreferrer nofollow"
               >
                 Safety API
               </a>

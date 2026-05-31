@@ -43,6 +43,15 @@ describe("parseScreenshotParams", () => {
     expect(result?.url).toBe("ftp://example.com");
   });
 
+  it("prepends https:// if no protocol is provided", () => {
+    const result = parseScreenshotParams(
+      "example.com/path",
+      undefined,
+      undefined,
+    );
+    expect(result?.url).toBe("https://example.com/path");
+  });
+
   it("uses default width and height when not provided", () => {
     const result = parseScreenshotParams(
       "https://example.com",
@@ -53,15 +62,31 @@ describe("parseScreenshotParams", () => {
     expect(result?.height).toBe(CONFIG.screenshot.defaultHeight);
   });
 
-  it("parses custom width and height", () => {
+  it("parses custom width and height from allowed list", () => {
+    const result = parseScreenshotParams("https://example.com", "1280", "720");
+    expect(result?.width).toBe(1280);
+    expect(result?.height).toBe(720);
+  });
+
+  it("falls back to defaults for invalid resolution combination", () => {
     const result = parseScreenshotParams("https://example.com", "1024", "768");
-    expect(result?.width).toBe(1024);
-    expect(result?.height).toBe(768);
+    expect(result?.width).toBe(CONFIG.screenshot.defaultWidth);
+    expect(result?.height).toBe(CONFIG.screenshot.defaultHeight);
+  });
+
+  it("infers width when only allowed height is provided", () => {
+    const result = parseScreenshotParams(
+      "https://example.com",
+      undefined,
+      "800",
+    );
+    expect(result?.width).toBe(360);
+    expect(result?.height).toBe(800);
   });
 
   it("falls back to defaults for non-numeric width/height", () => {
     const result = parseScreenshotParams("https://example.com", "abc", "");
-    expect(result?.width).toBeNaN();
+    expect(result?.width).toBe(CONFIG.screenshot.defaultWidth);
     expect(result?.height).toBe(CONFIG.screenshot.defaultHeight);
   });
 });

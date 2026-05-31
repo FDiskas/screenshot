@@ -2,7 +2,7 @@ import type { HTTPRequest, Page } from "puppeteer";
 
 export const applySmartBlocker = async (page: Page) => {
   const WHITELIST_REGEX =
-    /^(?:.*?\.)?(?:fbcdn\.net|facebook\.net|gstatic\.com|googleapis\.com|licdn\.com|twimg\.com|cloudflare\.com|jsdelivr\.net|unpkg\.com|github\.githubassets\.com)$/i;
+    /^(?:.*?\.)?(?:fbcdn\.net|facebook\.net|gstatic\.com|googleapis\.com|licdn\.com|twimg\.com|cloudflare\.com|jsdelivr\.net|unpkg\.com|github\.githubassets\.com|captcha-delivery\.com)$/i;
 
   await page.setRequestInterception(true);
 

@@ -8,6 +8,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { FC } from "react";
+import { CONFIG } from "../config";
 
 export const DocsPage: FC<{ origin: string }> = ({ origin }) => {
   const jsExample = `
@@ -61,7 +62,7 @@ async function captureWithPolling(url, imgElement) {
               Documentation
             </span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/60">
             Getting Started with{" "}
             <span className="text-primary italic">SnapService</span>
           </h1>
@@ -142,7 +143,8 @@ async function captureWithPolling(url, imgElement) {
                         number
                       </td>
                       <td className="px-6 py-4">
-                        Viewport width (default: 387)
+                        Viewport width (default:{" "}
+                        {CONFIG.screenshot.defaultWidth})
                       </td>
                     </tr>
                     <tr>
@@ -153,11 +155,42 @@ async function captureWithPolling(url, imgElement) {
                         number
                       </td>
                       <td className="px-6 py-4">
-                        Viewport height (default: 217)
+                        Viewport height (default:{" "}
+                        {CONFIG.screenshot.defaultHeight})
                       </td>
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <CheckCircle className="h-6 w-6 text-primary" />
+                Allowed Resolutions
+              </h2>
+              <div className="bg-card border rounded-2xl p-6 shadow-sm">
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  For security and performance, only specific viewport
+                  resolutions are supported. If only one dimension is provided,
+                  the API will automatically infer the other. If no match is
+                  found, it will default to{" "}
+                  <strong>
+                    {CONFIG.screenshot.defaultWidth}x
+                    {CONFIG.screenshot.defaultHeight}
+                  </strong>
+                  .
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {CONFIG.screenshot.allowedResolutions.map((res) => (
+                    <span
+                      key={`${res.width}x${res.height}`}
+                      className="px-3 py-1.5 bg-muted text-muted-foreground rounded-lg font-mono text-sm border shadow-sm"
+                    >
+                      {res.width} x {res.height}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
 

@@ -73,7 +73,8 @@ export const getStatusPlaceholder = async (
   let text = `Status: ${status}`;
   if (status === 202) text = CONFIG.placeholder.textByStatus.processing;
   if (status === 400) text = CONFIG.placeholder.textByStatus.invalidUrl;
-  if (status === 403) text = CONFIG.placeholder.textByStatus.unsafeSite;
+  if (status === 403) text = CONFIG.placeholder.textByStatus.restricted;
+  if (status === 418) text = CONFIG.placeholder.textByStatus.dissallowed;
 
   const buf = await generatePlaceholder(text, width, height);
   // Only cache default dimensions — arbitrary query-param sizes would grow the

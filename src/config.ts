@@ -10,6 +10,20 @@ export const CONFIG = {
     minReloadAgeMs: 10 * 24 * 60 * 60 * 1000,
   },
   screenshot: {
+    allowedResolutions: [
+      { width: 320, height: 568 },
+      { width: 360, height: 800 },
+      { width: 375, height: 667 },
+      { width: 390, height: 844 },
+      { width: 414, height: 896 },
+      { width: 430, height: 932 },
+      { width: 480, height: 270 },
+      { width: 1280, height: 720 },
+      { width: 1366, height: 768 },
+      { width: 1440, height: 900 },
+      { width: 1536, height: 864 },
+      { width: 1920, height: 1080 },
+    ],
     defaultWidth: 480,
     defaultHeight: 270,
     desktopViewportWidth: 1280,
@@ -63,7 +77,7 @@ export const CONFIG = {
       "--disable-blink-features=AutomationControlled",
       // Some sites fail headless navigation with ERR_HTTP2_PROTOCOL_ERROR.
       // Force HTTP/1.1 fallback to improve screenshot reliability.
-      "--disable-http2",
+      // "--disable-http2",
     ] as string[],
     allowedProtocol: "https://",
     resize: {
@@ -88,7 +102,7 @@ export const CONFIG = {
     rootDir: ["public", "screenshots"] as const,
     maxAgeMs: 30 * 24 * 60 * 60 * 1000,
     imageExtension: ".png",
-    filenameDatePattern: /^(\d{8}T\d{6}Z)-[a-f0-9]{8}\.png$/i,
+    filenameDatePattern: /^(\d{8}T\d{6}Z)-[a-f0-9]{8}(?:-(\d+)x(\d+))?\.png$/i,
     fallbackTld: "other",
   },
   safety: {
@@ -119,7 +133,9 @@ export const CONFIG = {
     textByStatus: {
       processing: "Processing...",
       invalidUrl: "Invalid URL",
+      restricted: "Restricted Content",
       unsafeSite: "Unsafe Site",
+      dissallowed: "Dissallowed",
     },
   },
   retention: {

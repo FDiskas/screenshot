@@ -18,19 +18,44 @@ export function parseScreenshotParams(
 ): ScreenshotParams | null {
   if (!rawUrl) return null;
 
-  let url = rawUrl;
+  let url = rawUrl.trim();
   if (url.startsWith("http://")) {
     url = url.replace("http://", "https://");
+  } else if (!url.startsWith("https://") && !url.includes("://")) {
+    url = `https://${url}`;
   }
 
-  const width = parseInt(
-    rawWidth || String(CONFIG.screenshot.defaultWidth),
-    10,
-  );
-  const height = parseInt(
-    rawHeight || String(CONFIG.screenshot.defaultHeight),
-    10,
-  );
+  const requestedWidth = rawWidth ? parseInt(rawWidth, 10) : undefined;
+  const requestedHeight = rawHeight ? parseInt(rawHeight, 10) : undefined;
+
+  let width: number = CONFIG.screenshot.defaultWidth;
+  let height: number = CONFIG.screenshot.defaultHeight;
+
+  if (requestedWidth && requestedHeight) {
+    const isValid = CONFIG.screenshot.allowedResolutions.some(
+      (res) => res.width === requestedWidth && res.height === requestedHeight,
+    );
+    if (isValid) {
+      width = requestedWidth;
+      height = requestedHeight;
+    }
+  } else if (requestedWidth) {
+    const match = CONFIG.screenshot.allowedResolutions.find(
+      (res) => res.width === requestedWidth,
+    );
+    if (match) {
+      width = match.width;
+      height = match.height;
+    }
+  } else if (requestedHeight) {
+    const match = CONFIG.screenshot.allowedResolutions.find(
+      (res) => res.height === requestedHeight,
+    );
+    if (match) {
+      width = match.width;
+      height = match.height;
+    }
+  }
 
   return { url, width, height };
 }
