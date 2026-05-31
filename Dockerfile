@@ -25,6 +25,7 @@ COPY . .
 RUN mkdir -p /app/public/screenshots && chown -R bun:bun /app/public
 
 # Run the app
+
 USER bun
 VOLUME ["/app/public/screenshots"]
 EXPOSE 3000
