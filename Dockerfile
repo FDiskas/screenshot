@@ -24,7 +24,7 @@ COPY . .
 RUN mkdir -p /app/public/screenshots && chown -R bun:bun /app/public
 
 # Download Chromium via Puppeteer after dependencies are installed
-RUN bun x puppeteer browsers install chrome
+RUN BROWSER_REVISION=latest bun x puppeteer browsers install chrome
 
 # Run the app
 USER bun

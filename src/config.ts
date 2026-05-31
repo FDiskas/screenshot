@@ -43,21 +43,21 @@ export const CONFIG = {
      * which many WAFs treat as a bot and answer with HTTP 403.
      */
     browserUserAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
     /**
      * Must align with browserUserAgent (Chrome major + Windows) so Sec-CH-UA / UA-CH match.
      * Helps sites (e.g. Reddit) that reject mismatched or automation-only clients with HTTP 403.
      */
     browserUserAgentClientHints: {
       brands: [
-        { brand: "Google Chrome", version: "131" },
-        { brand: "Chromium", version: "131" },
+        { brand: "Google Chrome", version: "146" },
+        { brand: "Chromium", version: "146" },
         { brand: "Not_A Brand", version: "24" },
       ],
-      fullVersion: "131.0.0.0",
+      fullVersion: "146.0.0.0",
       fullVersionList: [
-        { brand: "Google Chrome", version: "131.0.0.0" },
-        { brand: "Chromium", version: "131.0.0.0" },
+        { brand: "Google Chrome", version: "146.0.0.0" },
+        { brand: "Chromium", version: "146.0.0.0" },
         { brand: "Not_A Brand", version: "24.0.0.0" },
       ],
       platform: "Windows",
