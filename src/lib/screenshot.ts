@@ -119,11 +119,6 @@ const buildOverlaySvg = (
   `;
 };
 
-export interface DnsDiagnosticLogParams {
-  hostname: string;
-  enforceProfileMatch: boolean;
-}
-
 /**
  * Puppeteer follows HTTP redirects automatically. We still wait for `load` (not only
  * `domcontentloaded`) and then until the URL stops changing so late `location` /

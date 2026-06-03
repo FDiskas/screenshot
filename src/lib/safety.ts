@@ -1,6 +1,6 @@
 import { CONFIG } from "../config";
 
-export interface SafetyCheckResult {
+interface SafetyApiResponse {
   url: string;
   status: boolean; // false means safe
 }
@@ -22,7 +22,7 @@ export const checkSafety = async (url: string): Promise<boolean> => {
       return false;
     }
 
-    const data = (await response.json()) as SafetyCheckResult;
+    const data = (await response.json()) as SafetyApiResponse;
     // status: false -> safe
     // status: true -> unsafe
     return data.status === false;

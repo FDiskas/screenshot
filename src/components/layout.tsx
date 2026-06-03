@@ -34,7 +34,7 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
               } else {
                 document.documentElement.classList.remove('dark');
               }
-            } catch (e) {}
+            } catch {}
           })();
         `}</script>
         <style>{`
@@ -60,26 +60,6 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
               </span>
             </a>
             <nav className="flex items-center gap-6">
-              {/* <a
-                href="/"
-                className="text-sm font-medium hover:text-primary transition-colors"
-              >
-                Home
-              </a>
-              <a
-                href="#demo"
-                className="text-sm font-medium hover:text-primary transition-colors"
-              >
-                Demo
-              </a>
-              <a
-                href="#gallery"
-                className="text-sm font-medium hover:text-primary transition-colors"
-              >
-                Gallery
-              </a>
-              <div className="h-8 w-px bg-border mx-2" /> */}
-
               <button
                 type="button"
                 id="theme-toggle"

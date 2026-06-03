@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
-import { cacheService, isExpired, parseScreenshotMeta } from "../src/lib/cache";
 import { CONFIG } from "../src/config";
+import { cacheService, isExpired, parseScreenshotMeta } from "../src/lib/cache";
 import { checkSafety } from "../src/lib/safety";
 
 // Mock fetch globally using spyOn

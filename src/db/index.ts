@@ -1,16 +1,7 @@
 import { createHash } from "node:crypto";
 import { CONFIG } from "../config";
 import { cacheService } from "../lib/cache";
-
-export interface ScreenshotRecord {
-  id: number;
-  url: string;
-  domain: string;
-  status: number;
-  image_path: string | null;
-  created_at: string;
-  expires_at: string;
-}
+import type { ScreenshotRecord } from "../types/screenshot";
 
 const toSqlDate = (date: Date): string => {
   return date.toISOString().slice(0, 19).replace("T", " ");

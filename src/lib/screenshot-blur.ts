@@ -1,5 +1,7 @@
 import type { Page } from "puppeteer";
 
+type PageWithEvaluate = Pick<Page, "evaluate">;
+
 export interface BlurCandidateMetrics {
   width: number;
   height: number;
@@ -43,7 +45,7 @@ export const shouldBlurMediaCandidate = (
 };
 
 export const applyMediaBlur = async (
-  page: Page,
+  page: PageWithEvaluate,
   blurConfig: BlurConfig,
 ): Promise<void> => {
   await page.evaluate((config) => {

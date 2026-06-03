@@ -13,7 +13,7 @@ const buildPlaceholderSvg = (
       <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="20" fill="#6b7280">${text}</text>
     </svg>`;
 
-export const generatePlaceholder = async (
+const generatePlaceholder = async (
   text: string,
   width: number = CONFIG.placeholder.defaultWidth,
   height: number = CONFIG.placeholder.defaultHeight,

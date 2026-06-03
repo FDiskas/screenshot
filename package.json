@@ -31,20 +31,15 @@
     "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "autoprefixer": "^10.4.27",
-    "clsx": "^2.1.1",
     "hono": "^4.12.11",
     "lucide-react": "^1.7.0",
     "postcss": "^8.5.8",
     "puppeteer": "^24.40.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sharp": "^0.34.5",
-    "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.1.14",
-    "zod": "^4.3.6"
+    "tailwindcss": "^4.1.14"
   }
 }

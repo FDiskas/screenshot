@@ -7,15 +7,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { FC } from "react";
-
-export interface ScreenshotRecord {
-  id: number;
-  url: string;
-  domain: string;
-  status: number;
-  image_path: string | null;
-  created_at: string;
-}
+import type { ScreenshotRecord } from "../types/screenshot";
 
 export const LandingPage: FC<{
   latest: ScreenshotRecord[];
@@ -124,7 +116,6 @@ export const LandingPage: FC<{
               </div>
               <input
                 id="demo-url"
-                type="url"
                 name="url"
                 required
                 placeholder="https://example.com"

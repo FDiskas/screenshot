@@ -1,4 +1,4 @@
-import type { UnknownInputType } from "@hatchet-dev/typescript-sdk";
+import type { JsonValue } from "@hatchet-dev/typescript-sdk";
 import { CONFIG } from "../../config";
 import { cacheService } from "../cache";
 import { hatchet } from "../hatchet";
@@ -9,7 +9,7 @@ interface ScreenshotInput {
   url: string;
   width: number;
   height: number;
-  [key: string]: UnknownInputType;
+  [key: string]: JsonValue;
 }
 
 export const ScreenshotWorkflow = hatchet.workflow<ScreenshotInput>({
