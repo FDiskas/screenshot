@@ -43,54 +43,76 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
         `}</style>
       </head>
       <body className="bg-background min-h-screen text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
+          {/* Subtle gradient line at top of header */}
+          <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/40 to-transparent" />
           <div className="container flex h-16 items-center justify-between">
+            {/* Logo */}
             <a
               href="/"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2.5 group"
               aria-label="Go to home page"
             >
               <img
                 src="/favicon.svg"
                 alt="SnapService logo"
-                className="h-8 w-8 rounded-lg shadow-lg shadow-primary/20"
+                className="h-8 w-8 rounded-xl shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-shadow"
               />
               <span className="text-xl font-bold tracking-tight">
-                SnapService
+                Snap<span className="text-primary">Service</span>
               </span>
             </a>
-            <nav className="flex items-center gap-6">
+
+            {/* Nav */}
+            <nav className="flex items-center gap-2">
+              <a
+                href="/docs"
+                className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted/60"
+              >
+                Docs
+              </a>
+              <a
+                href="https://github.com/FDiskas/screenshot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted/60"
+              >
+                GitHub
+              </a>
               <button
                 type="button"
                 id="theme-toggle"
-                className="p-2 rounded-md hover:bg-accent transition-colors"
+                className="p-2 rounded-lg hover:bg-muted/60 transition-colors text-muted-foreground hover:text-foreground"
                 aria-label="Toggle theme"
               >
-                <Sun className="h-5 w-5 dark:hidden" />
-                <Moon className="h-5 w-5 hidden dark:block" />
+                <Sun className="h-4 w-4 dark:hidden" />
+                <Moon className="h-4 w-4 hidden dark:block" />
               </button>
               <a
-                href="/docs"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-all hover:scale-105"
+                href="#demo"
+                className="ml-1 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-xl text-sm font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 transition-all hover:scale-105"
               >
-                Get Started
+                Try Demo
               </a>
             </nav>
           </div>
         </header>
+
         <main>{children}</main>
-        <footer className="border-t py-12 mt-20">
+
+        <footer className="border-t border-border/40 py-12 mt-8">
           <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-            <p className="text-sm text-muted-foreground">
-              © 2026 SnapService. All rights reserved.
-            </p>
+            <div className="flex items-center gap-2">
+              <img src="/favicon.svg" alt="" className="h-5 w-5 rounded-md opacity-70" />
+              <p className="text-sm text-muted-foreground">
+                © 2026 SnapService. All rights reserved.
+              </p>
+            </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <a
-                href="/privacy"
-                className="hover:text-primary transition-colors"
-              >
+              <a href="/privacy" className="hover:text-primary transition-colors">
                 Privacy & Terms
               </a>
+              <span className="text-border">·</span>
               <a
                 href="https://is.coders.lt"
                 className="hover:text-primary transition-colors"
@@ -99,9 +121,19 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
               >
                 Safety API
               </a>
+              <span className="text-border">·</span>
+              <a
+                href="https://github.com/FDiskas/screenshot"
+                className="hover:text-primary transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub
+              </a>
             </div>
           </div>
         </footer>
+
         <script>{`
           document.getElementById('theme-toggle').addEventListener('click', () => {
             const isDark = document.documentElement.classList.toggle('dark');
