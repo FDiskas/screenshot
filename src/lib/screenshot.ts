@@ -377,8 +377,8 @@ export const captureScreenshot = async (
 
     // Force global GC if available (Bun, Node)
     if (typeof Bun !== "undefined" && Bun.gc) {
-      Bun.gc(true);
-      console.log("[screenshot] Bun.gc called");
+      Bun.gc(false);
+      console.log("[screenshot] Bun.gc(false) called");
     } else if (global && typeof global.gc === "function") {
       global.gc();
       console.log("[screenshot] Node global.gc called");

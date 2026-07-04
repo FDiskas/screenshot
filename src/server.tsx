@@ -56,7 +56,7 @@ const cleanupInterval = setInterval(() => {
   }
   // Aggressive garbage collection to keep Bun memory usage low on idle
   if (typeof Bun !== "undefined" && Bun.gc) {
-    Bun.gc(true);
+    Bun.gc(false);
   }
 }, triggerMapMaxAgeMs);
 
