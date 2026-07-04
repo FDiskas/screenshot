@@ -4,6 +4,7 @@ import { type Context, Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import type { BlankEnv, BlankInput } from "hono/types";
 import { DocsPage } from "./components/DocsPage";
+import { GalleryPage } from "./components/GalleryPage";
 import { LandingPage } from "./components/LandingPage";
 import { Layout } from "./components/layout";
 import { PrivacyPage } from "./components/PrivacyPage";
@@ -95,6 +96,13 @@ app.get("/", (c) => {
   const origin = getRequestOrigin(c);
   return c.render(<LandingPage latest={latest} origin={origin} />, {
     title: CONFIG.server.homeTitle,
+  });
+});
+
+app.get("/gallery", (c) => {
+  const latest = dbService.getLatest(0, CONFIG.server.galleryPageSize);
+  return c.render(<GalleryPage latest={latest} />, {
+    title: `Gallery - ${CONFIG.server.defaultTitle}`,
   });
 });
 
@@ -284,6 +292,17 @@ const handleScreenshotRequest = async (
 
 app.get("/api/screenshot", async (c) => {
   return handleScreenshotRequest(c, "image");
+});
+
+app.get("/api/gallery", (c) => {
+  const offset = parseInt(c.req.query("offset") || "0", 10);
+  const limit = parseInt(c.req.query("limit") || String(CONFIG.server.galleryPageSize), 10);
+  const items = dbService.getLatest(offset, limit);
+  
+  return c.json({
+    items,
+    nextOffset: items.length === limit ? offset + limit : null
+  });
 });
 
 app.get("/api/raw", async (c) => {

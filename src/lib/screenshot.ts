@@ -320,6 +320,17 @@ export const captureScreenshot = async (
     memBefore = process.memoryUsage();
     console.log("[screenshot] mem before", memBefore);
   }
+
+  const startTime = performance.now();
+  let lastTraceTime = startTime;
+  const trace = (stepName: string) => {
+    const now = performance.now();
+    const elapsedSinceLast = now - lastTraceTime;
+    const elapsedTotal = now - startTime;
+    console.log(`[Trace] [${url}] ${stepName} (took ${elapsedSinceLast.toFixed(0)}ms | total ${elapsedTotal.toFixed(0)}ms)`);
+    lastTraceTime = now;
+  };
+
   try {
     if (!url.startsWith(CONFIG.screenshot.allowedProtocol)) {
       return {
@@ -338,10 +349,12 @@ export const captureScreenshot = async (
       ],
       ...(userDataDir ? { userDataDir } : {}),
     });
+    trace("Browser launched");
 
     page = await browser.newPage();
     await applySmartBlocker(page);
     await configurePage(page);
+    trace("Page configured");
 
     const { status, finalUrl, fallbackBuffer } = await navigateToPage(
       page,
@@ -349,6 +362,7 @@ export const captureScreenshot = async (
       width,
       height,
     );
+    trace("Navigated to URL");
 
     if (status !== 200) {
       return { buffer: fallbackBuffer || null, status, finalUrl };
@@ -356,12 +370,15 @@ export const captureScreenshot = async (
 
     if (CONFIG.screenshot.blurLargeMedia.enabled) {
       await applyMediaBlur(page, CONFIG.screenshot.blurLargeMedia);
+      trace("Applied media blur");
     }
 
     await hideAdsElements(page);
     await applyPageZoom(page);
+    trace("Hid ads and zoomed");
 
     rawBuffer = (await page.screenshot({ type: "png" })) as Buffer;
+    trace("Captured screenshot (Puppeteer)");
     const overlayHost = extractHostForOverlay(finalUrl || url, url);
     finalBuffer = await processImagePipeline(
       rawBuffer,
@@ -369,6 +386,7 @@ export const captureScreenshot = async (
       height,
       overlayHost,
     );
+    trace("Processed image pipeline (Sharp)");
 
     // Release memory ASAP
     rawBuffer = null;

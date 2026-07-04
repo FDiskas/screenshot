@@ -22,6 +22,7 @@ export const ScreenshotWorkflow = hatchet.workflow<ScreenshotInput>({
 ScreenshotWorkflow.task({
   name: CONFIG.workflows.screenshot.taskName,
   scheduleTimeout: "1h",
+  timeout: "5m",
   fn: async (input, _ctx) => {
     const { url, width, height } = input;
     const domainUrl = cacheService.getDomainUrl(url);

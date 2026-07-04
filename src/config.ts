@@ -8,6 +8,7 @@ export const CONFIG = {
     processingRefreshSeconds: 5,
     screenshotEventName: "screenshot:create",
     minReloadAgeMs: 10 * 24 * 60 * 60 * 1000,
+    galleryPageSize: 24,
   },
   screenshot: {
     allowedResolutions: [

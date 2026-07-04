@@ -208,7 +208,7 @@ export const cacheService = {
     };
   },
 
-  listLatestByDomain: (limit = 9): DomainShot[] => {
+  listLatestByDomain: (offset = 0, limit = 9): DomainShot[] => {
     const tldDirs = listDirs(CACHE_DIR);
     const collected: DomainShot[] = [];
 
@@ -228,7 +228,7 @@ export const cacheService = {
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
-      .slice(0, limit);
+      .slice(offset, offset + limit);
   },
 
   cleanupExpired: (): { deleted: number } => {

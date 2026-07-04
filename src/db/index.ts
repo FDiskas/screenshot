@@ -36,8 +36,8 @@ const toRecord = (shot: {
 };
 
 export const dbService = {
-  getLatest: (limit = 9): ScreenshotRecord[] => {
-    return cacheService.listLatestByDomain(limit).map(toRecord);
+  getLatest: (offset = 0, limit = 9): ScreenshotRecord[] => {
+    return cacheService.listLatestByDomain(offset, limit).map(toRecord);
   },
 
   getByUrl: (

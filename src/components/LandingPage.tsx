@@ -68,12 +68,19 @@ export const LandingPage: FC<{
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </a>
               <a
+                href="/gallery"
+                className="px-8 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-2 border border-border/60 bg-card/60 backdrop-blur-sm hover:bg-card hover:border-primary/30 hover:scale-105 transition-all"
+              >
+                <ImageIcon className="h-5 w-5" />
+                View Gallery
+              </a>
+              <a
                 href="https://github.com/FDiskas/screenshot"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-8 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-2 border border-border/60 bg-card/60 backdrop-blur-sm hover:bg-card hover:border-primary/30 hover:scale-105 transition-all"
               >
-                <ImageIcon className="h-5 w-5" />
+                <Code2 className="h-5 w-5" />
                 GitHub
               </a>
             </div>
