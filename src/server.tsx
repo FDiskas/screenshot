@@ -23,19 +23,52 @@ import { CleanupWorkflow } from "./lib/workflows/cleanup.workflow";
 import { PurgeWorkflow } from "./lib/workflows/purge.workflow";
 import { ScreenshotWorkflow } from "./lib/workflows/screenshot.workflow";
 
-async function startWorker() {
-  const worker = await hatchet.worker(CONFIG.worker.name, {
-    slots: CONFIG.worker.slots,
-  });
-  await worker.registerWorkflow(ScreenshotWorkflow);
-  await worker.registerWorkflow(CleanupWorkflow);
-  await worker.registerWorkflow(PurgeWorkflow);
-  await worker.start();
-  console.log(
-    "Hatchet worker started within server process and listening for screenshot events...",
-  );
+let isWorkerRunning = true;
+
+async function startWorkerLoop() {
+  let retryCount = 0;
+  const initialBackoffMs = 2_000;
+  const maxBackoffMs = 30_000;
+
+  while (isWorkerRunning) {
+    try {
+      console.log(
+        `[Hatchet Worker] Initializing worker '${CONFIG.worker.name}'...`,
+      );
+      const worker = await hatchet.worker(CONFIG.worker.name, {
+        slots: CONFIG.worker.slots,
+      });
+      await worker.registerWorkflow(ScreenshotWorkflow);
+      await worker.registerWorkflow(CleanupWorkflow);
+      await worker.registerWorkflow(PurgeWorkflow);
+
+      console.log(
+        `[Hatchet Worker] Starting worker '${CONFIG.worker.name}'...`,
+      );
+      retryCount = 0;
+      await worker.start();
+      console.warn(
+        `[Hatchet Worker] Worker '${CONFIG.worker.name}' stopped listening.`,
+      );
+    } catch (error) {
+      if (!isWorkerRunning) break;
+      retryCount++;
+      const backoffMs = Math.min(
+        initialBackoffMs * 2 ** Math.min(retryCount - 1, 6),
+        maxBackoffMs,
+      );
+      console.error(
+        `[Hatchet Worker] Worker failed or disconnected (attempt ${retryCount}). Reconnecting in ${Math.round(backoffMs / 1000)}s...`,
+        error,
+      );
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+    }
+  }
 }
-startWorker().catch(console.error);
+
+startWorkerLoop().catch((err) => {
+  console.error("[Hatchet Worker] Fatal error in worker loop:", err);
+});
 
 const app = new Hono();
 /** Last time we enqueued a Hatchet screenshot event per domain (debounce / duplicate suppression). */
@@ -63,6 +96,7 @@ const cleanupInterval = setInterval(() => {
 
 // Cleanup interval on process exit to prevent memory leak
 const shutdown = () => {
+  isWorkerRunning = false;
   clearInterval(cleanupInterval);
 };
 process.on("SIGINT", shutdown);
@@ -296,12 +330,15 @@ app.get("/api/screenshot", async (c) => {
 
 app.get("/api/gallery", (c) => {
   const offset = parseInt(c.req.query("offset") || "0", 10);
-  const limit = parseInt(c.req.query("limit") || String(CONFIG.server.galleryPageSize), 10);
+  const limit = parseInt(
+    c.req.query("limit") || String(CONFIG.server.galleryPageSize),
+    10,
+  );
   const items = dbService.getLatest(offset, limit);
-  
+
   return c.json({
     items,
-    nextOffset: items.length === limit ? offset + limit : null
+    nextOffset: items.length === limit ? offset + limit : null,
   });
 });
 
