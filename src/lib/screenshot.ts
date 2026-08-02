@@ -153,7 +153,7 @@ const waitForUrlToStabilize = async (
     try {
       await page.waitForNetworkIdle({
         idleTime: 500,
-        timeout: Math.min(2000, remaining),
+        timeout: Math.min(1000, remaining),
       });
     } catch {
       // Best effort
@@ -266,7 +266,7 @@ async function processImagePipeline(
       withoutEnlargement: CONFIG.screenshot.resize.withoutEnlargement,
     })
     .composite([{ input: overlaySvg, top: 0, left: 0 }])
-    .png({ compressionLevel: 9, adaptiveFiltering: true })
+    .png({ compressionLevel: 6, adaptiveFiltering: false })
     .toBuffer();
 }
 

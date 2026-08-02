@@ -106,13 +106,15 @@ process.on("exit", shutdown);
 // Static files
 app.use("/index.css", serveStatic({ path: "./public/index.css" }));
 app.use("/favicon.svg", serveStatic({ path: "./public/favicon.svg" }));
-app.use("/screenshots/*", async (c, next) => {
-  await next();
-  if (c.res.ok) {
-    c.res.headers.set("Cache-Control", screenshotCacheControl);
-  }
-});
-app.use("/screenshots/*", serveStatic({ root: "./public" }));
+app.use(
+  "/screenshots/*",
+  serveStatic({
+    root: "./public",
+    onFound: (_path, c) => {
+      c.header("Cache-Control", screenshotCacheControl);
+    },
+  }),
+);
 
 // SSR Renderer
 type RendererProps = { title?: string; children?: React.ReactNode };
