@@ -3,9 +3,11 @@ import {
   Camera,
   CheckCircle,
   Code2,
+  Download,
   Globe,
   Image as ImageIcon,
   Lock,
+  Puzzle,
   Search,
   ShieldCheck,
   Sparkles,
@@ -205,6 +207,39 @@ export const LandingPage: FC<{
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── CHROME EXTENSION ─────────────────────────────────────────── */}
+      <section className="container pt-16">
+        <div className="max-w-5xl mx-auto bg-card border border-primary/25 rounded-3xl p-6 md:p-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative flex flex-col md:flex-row md:items-center gap-6">
+            <div className="bg-primary/10 w-14 h-14 rounded-2xl flex items-center justify-center shrink-0">
+              <Puzzle className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="inline-flex items-center gap-2 mb-2 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-wider">
+                New · Chrome extension
+              </div>
+              <h2 className="text-2xl font-bold mb-2">
+                Google Search Website Previews
+              </h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Adds live website preview thumbnails next to organic Google
+                Search results — powered by this screenshot API.
+              </p>
+            </div>
+            <a
+              href="https://chromewebstore.google.com/detail/google-search-website-pre/ljknbknamchmlbcgmcbadjpmjfhncfek"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group shrink-0 px-6 py-3.5 rounded-xl font-semibold inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105 hover:shadow-primary/30 transition-all"
+            >
+              <Download className="h-5 w-5" />
+              Add to Chrome
+            </a>
           </div>
         </div>
       </section>
